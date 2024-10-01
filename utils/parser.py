@@ -114,8 +114,8 @@ def parseWeek(day1, month1, year1, day2, month2, year2, group = "КНТ-22-4"):
             pairs = row.find_all('a', class_="linktt")
             multiple_pairs = []
             for pair in pairs:
-                type = re.search(r'\s(\w+)', pair.text).group().replace(" ", "")
-                name = re.search(r'(.+)\s', pair.text).group().replace(" ", "")
+                type = re.search(r'\s(\w+)', pair.text).group()[1:]
+                name = re.search(r'(.+)\s', pair.text).group()[:-1]
                 multiple_pairs.append([name, type])
             # print(f"Эмуляция создания объекта: \nmain: {multiple_pairs[0][0]} {multiple_pairs[0][1]}\nothers: {multiple_pairs[1:]}")
             parsed_week[current_date].append(Lecture(pair_number, multiple_pairs, "Лк", start_hours, start_minutes, end_hours, end_minutes))
