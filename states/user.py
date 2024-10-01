@@ -9,3 +9,4 @@ class Settings(StatesGroup):
 class UserWait(StatesGroup):
     nure_group = State()
     add_group = State()
+    Feedback = State()
