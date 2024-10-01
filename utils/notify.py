@@ -1,10 +1,9 @@
 import asyncio
 from datetime import datetime, timedelta
 from loader import db, links, bot, notify_lectures, notify, display
-from utils.utilities import *
 from aiogram.utils import exceptions
 from aiogram.utils.markdown import hlink
-
+from utils.utilities import datetime_now, additionalDebug, datePrint, type_optimize
 
 async def notify_process(wait_for):
     while True:

@@ -12,7 +12,7 @@ additional_debug = True
 load_dotenv()
 
 ADMINS = list(map(int, os.getenv('ADMINS').split(',')))
-print(ADMINS)
+FEEDBACK_CHAT = int(os.getenv('FEEDBACK_CHAT'))
 
 bot = Bot(token=os.getenv('TOKEN'))
 storage = MemoryStorage()
