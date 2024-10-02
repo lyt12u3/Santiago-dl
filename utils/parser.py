@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup as BS
 from loader import groups, groups_list, week_lectures, notify_lectures
 from utils.utilities import datetime_now
 
+
 def parseApiGroups():
     print("[Updating all groups] Sending request")
     r = requests.get("https://nure-dev.pp.ua/api/groups")
@@ -13,12 +14,13 @@ def parseApiGroups():
         print(f"Група {group['name']} код: {group['id']} додана")
         groups_list.add_group(group['name'], group['id'])
 
+
 def parseGroup():
     r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:2677400761397891::NO#")
     html = BS(r.content, 'lxml')
     result = html.find("div", id="GROUPS_AJAX")
     groups_data_lines = result.find_all("a", style="white-space:nowrap;")
-    groups_list.truncate() # Deleting existing groups
+    groups_list.truncate()  # Deleting existing groups
     for group_line in groups_data_lines:
         match = re.search(r"\('(.+)',(.+)\)", group_line.get("onclick"))
         group = match.group(1)
@@ -26,38 +28,27 @@ def parseGroup():
         print(f"{group} - {code}")
         groups_list.add_group(group, code)
 
-class Lecture:
-    def __init__(self, index, name, f_type, start_hours, start_minutes, end_hours, end_minutes, name2 = [], f_type2 = "None"):
-        self.index = index
-        self.name = name
-        self.f_type = f_type
-        if f_type == "Лк":
-            self.type = "Лекція"
-        elif f_type == "Пз":
-            self.type = "Практичне заняття"
-        elif f_type == "Лб":
-            self.type = "Лабораторне заняття"
-        elif f_type == "Конс":
-            self.type = "Консультація"
-        else:
-            self.type = "Не визначено"
 
-        if f_type2 == "Лк":
-            self.type2 = "Лекція"
-        elif f_type2 == "Пз":
-            self.type2 = "Практичне заняття"
-        elif f_type2 == "Лб":
-            self.type2 = "Лабораторне заняття"
-        elif f_type2 == "Конс":
-            self.type2 = "Консультація"
-        else:
-            self.type2 = "Не визначено"
+class Lecture:
+    def __init__(self, index, info, start_hours, start_minutes, end_hours, end_minutes):
+        self.index = index
+        self.info = info
         self.start_hours = start_hours
         self.start_minutes = start_minutes
         self.end_hours = end_hours
         self.end_minutes = end_minutes
-        self.name2 = name2
-        self.f_type2 = f_type2
+        # self.f_type = f_type
+        # if f_type == "Лк":
+        #     self.type = "Лекція"
+        # elif f_type == "Пз":
+        #     self.type = "Практичне заняття"
+        # elif f_type == "Лб":
+        #     self.type = "Лабораторне заняття"
+        # elif f_type == "Конс":
+        #     self.type = "Консультація"
+        # else:
+        #     self.type = "Не визначено"
+
 
     def startTime(self):
         return self.start_hours + ":" + self.start_minutes
@@ -70,8 +61,7 @@ class Lecture:
         self.start_minutes = start_minutes
 
 
-def parseWeek(day1, month1, year1, day2, month2, year2, group = "КНТ-22-4"):
-    # all_groups = Groups("database.db")
+def parseWeek(day1, month1, year1, day2, month2, year2, group="КНТ-22-4"):
     group_code = groups.get_code(group)
     r = requests.get(
         f"https://cist.nure.ua/ias/app/tt/f?p=778:201:1616752339325756:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{day1}.{month1}.{year1},{day2}.{month2}.{year2},{group_code},0:")
@@ -93,17 +83,17 @@ def parseWeek(day1, month1, year1, day2, month2, year2, group = "КНТ-22-4"):
             parsed_week[current_date] = [current_day]
         else:
             # if current_date == "01.10.2024":
-                # if doodoododo:
-                #     pairs_test = [["*СГМтА", "Лк"], ["*ФJS", "Пз"], ["ПВСЗД", "Лк"], ["ФВ", "Пз"]]
-                #     # pairs_test = [["*СГМтА", "Лк"]]
-                #     current_time = datetime_now()
-                #     minute = current_time.time().minute + 6
-                #     hour = current_time.time().hour
-                #     parsed_week["01.10.2024"].append(Lecture("1", pairs_test, "Лк", str(hour), str(minute), "20", "00"))
-                #     # parsed_week["30.09.2024"].append(Lecture("1", pairs_test, "Лк", "20", "20", "21", "00"))
-                #     # parsed_week["01.10.2024"].append(Lecture("2", [["*ФJS", "Лк"]], "Лк", "22", "20", "23", "00"))
-                #
-                #     doodoododo = False
+            # if doodoododo:
+            #     pairs_test = [["*СГМтА", "Лк"], ["*ФJS", "Пз"], ["ПВСЗД", "Лк"], ["ФВ", "Пз"]]
+            #     # pairs_test = [["*СГМтА", "Лк"]]
+            #     current_time = datetime_now()
+            #     minute = current_time.time().minute + 6
+            #     hour = current_time.time().hour
+            #     parsed_week["01.10.2024"].append(Lecture("1", pairs_test, "Лк", str(hour), str(minute), "20", "00"))
+            #     # parsed_week["30.09.2024"].append(Lecture("1", pairs_test, "Лк", "20", "20", "21", "00"))
+            #     # parsed_week["01.10.2024"].append(Lecture("2", [["*ФJS", "Лк"]], "Лк", "22", "20", "23", "00"))
+            #
+            #     doodoododo = False
             pair_number = row.find('td', class_='left').text
             pair_time = row.find('td', class_='left').find_next_sibling().text
             start = re.search(r'(.+)\s', pair_time).group().replace(" ", "")
@@ -117,42 +107,12 @@ def parseWeek(day1, month1, year1, day2, month2, year2, group = "КНТ-22-4"):
                 type = re.search(r'\s(\w+)', pair.text).group()[1:]
                 name = re.search(r'(.+)\s', pair.text).group()[:-1]
                 multiple_pairs.append([name, type])
-            # print(f"Эмуляция создания объекта: \nmain: {multiple_pairs[0][0]} {multiple_pairs[0][1]}\nothers: {multiple_pairs[1:]}")
-            parsed_week[current_date].append(Lecture(pair_number, multiple_pairs, "Лк", start_hours, start_minutes, end_hours, end_minutes))
-
-            # if len(pairs) > 1:
-            #     # type1 = re.search(r'\s(\w+)', pairs[0].text).group().replace(" ", "")
-            #     # name1 = re.search(r'(.+)\s', pairs[0].text).group().replace(" ", "")
-            #     # type2 = re.search(r'\s(\w+)', pairs[1].text).group().replace(" ", "")
-            #     # name2 = re.search(r'(.+)\s', pairs[1].text).group().replace(" ", "")
-            #     #
-            #     # parsed_week[current_date].append(Lecture(pair_number, name1, type1, start_hours, start_minutes, end_hours, end_minutes, name2, type2))
-            #     #
-            #     # # parsed_week[current_date].append(Lecture(pair_number, name2, type2, start_hours, start_minutes, end_hours, end_minutes))
-            #     # print(f"Добавлена двойная пара: {name1} | {name2}")
-            #
-            #     print("Запуск цикла")
-            #     multiple_pairs = []
-            #     for pair in pairs:
-            #         type = re.search(r'\s(\w+)', pair.text).group().replace(" ", "")
-            #         name = re.search(r'(.+)\s', pair.text).group().replace(" ", "")
-            #         print(f"Добавлено: {name} {type}")
-            #         multiple_pairs.append([name, type])
-            #     # print(f"Эмуляция создания объекта: \nmain: {multiple_pairs[0][0]} {multiple_pairs[0][1]}\nothers: {multiple_pairs[1:]}")
-            #     parsed_week[current_date].append(Lecture(pair_number, multiple_pairs, "Лк", start_hours, start_minutes, end_hours, end_minutes))
-            # # else:
-            # #     type = re.search(r'\s(\w+)', pairs[0].text).group().replace(" ", "")
-            # #     name = re.search(r'(.+)\s', pairs[0].text).group().replace(" ", "")
-            # #     parsed_week[current_date].append(Lecture(pair_number, name, type, start_hours, start_minutes, end_hours, end_minutes))
-            # #     print(f"Добавлена пара: {name}")
-
-    # week_lectures[group] = parsed_week
-    # notify_lectures[group] = week_lectures[group]["01.10.2024"][1:]
+            parsed_week[current_date].append(Lecture(pair_number, multiple_pairs, start_hours, start_minutes, end_hours, end_minutes))
 
     return parsed_week
 
 
-def parseSubjects(group = "КНТ-22-4"):
+def parseSubjects(group="КНТ-22-4"):
     try:
         # all_groups = Groups("database.db")
         group_code = groups.get_code(group)
@@ -174,7 +134,8 @@ def parseSubjects(group = "КНТ-22-4"):
     except:
         print(f"Error {group}")
 
-def parseDay(day, month, year, group = "КНТ-22-4"):
+
+def parseDay(day, month, year, group="КНТ-22-4"):
     # all_groups = Groups("database.db")
     group_code = groups.get_code(group)
     r = requests.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:1616752339325756:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{day}.{month}.{year},{day}.{month}.{year},{group_code},0:")
@@ -209,7 +170,7 @@ def parseDay(day, month, year, group = "КНТ-22-4"):
         # end_hours = re.search(r'(\d+):', end).group().replace(":", "")
         # end_minutes = re.search(r':(\d+)', end).group().replace(":", "")
         lectures.append(Lecture(index[i].text, name, type, start_hours, start_minutes, end_hours, end_minutes))
-        #print(f"{index[i].text} пара: {subj_name}\n{subj_type}\nЧас: {time[i].text}\n")
-        #print(f"{pari[i].index} пара: {pari[i].name}\n{pari[i].type}\nПочаток: {pari[i].start_hours}:{pari[i].start_minutes}\nКінець: {pari[i].end_hours}:{pari[i].end_minutes}\n")
+        # print(f"{index[i].text} пара: {subj_name}\n{subj_type}\nЧас: {time[i].text}\n")
+        # print(f"{pari[i].index} пара: {pari[i].name}\n{pari[i].type}\nПочаток: {pari[i].start_hours}:{pari[i].start_minutes}\nКінець: {pari[i].end_hours}:{pari[i].end_minutes}\n")
 
     return lectures

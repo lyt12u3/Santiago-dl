@@ -48,7 +48,7 @@ async def week_forward(callback: types.CallbackQuery):
             lectures += f"*{week_days[day][0]} {escapeMarkdown(day)}*:\n"
         if len(week_days[day]) > 1:
             for lecture in week_days[day][1:]:
-                lecture_name = escapeMarkdown(lecture.name)
+                lecture_name = escapeMarkdown(lecture.info)
                 lectures += f" *{lecture.index}️⃣* ⏰ {lecture.startTime()}\-{lecture.endTime()} 📚 *{lecture_name}* {lecture.f_type}\n"
         else:
             lectures += "В цей день пар немає 🥰\n"
@@ -77,7 +77,7 @@ async def week_forward(callback: types.CallbackQuery):
             lectures += f"*{week_days[day][0]} {escapeMarkdown(day)}*:\n"
         if len(week_days[day]) > 1:
             for lecture in week_days[day][1:]:
-                lecture_name = escapeMarkdown(lecture.name)
+                lecture_name = escapeMarkdown(lecture.info)
                 lectures += f" *{lecture.index}️⃣* ⏰ {lecture.startTime()}\-{lecture.endTime()} 📚 *{lecture_name}* {lecture.f_type}\n"
         else:
             lectures += "В цей день пар немає 🥰\n"

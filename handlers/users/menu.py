@@ -97,7 +97,7 @@ async def week_forward(callback: types.CallbackQuery):
             lectures += f"<b>{week_days[day][0]} {day}</b>:\n"
         if len(week_days[day]) > 1:
             for lecture in week_days[day][1:]:
-                for lecture_info in lecture.name:
+                for lecture_info in lecture.info:
                     lecture_name = lecture_info[0]
                     lecture_type = lecture_info[1]
                     lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture_name}</b> {lecture_type}\n"
@@ -128,7 +128,7 @@ async def week_forward(callback: types.CallbackQuery):
             lectures += f"<b>{week_days[day][0]} {day}</b>:\n"
         if len(week_days[day]) > 1:
             for lecture in week_days[day][1:]:
-                for lecture_info in lecture.name:
+                for lecture_info in lecture.info:
                     lecture_name = lecture_info[0]
                     lecture_type = lecture_info[1]
                     lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture_name}</b> {lecture_type}\n"

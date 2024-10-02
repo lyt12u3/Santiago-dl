@@ -12,7 +12,7 @@ async def notify_process(wait_for):
                 lecture = notify_lectures[group][0]
 
                 # Lecture name get
-                lectures_list = lecture.name
+                lectures_list = lecture.info
                 # lecture_name2 = escapeMarkdown(lecture.name2)
 
                 # Time get
@@ -25,11 +25,11 @@ async def notify_process(wait_for):
                 # Creating target time to notify
                 target_time = datetime.strptime(f"{year}.{month}.{day} {lecture.startTime()}", "%Y.%m.%d %H:%M")
                 left_time = target_time - current_time
-                additionalDebug(f"TARGET: {lecture.name} {group} {target_time} LEFT: {left_time}")
+                additionalDebug(f"TARGET: {lecture.info} {group} {target_time} LEFT: {left_time}")
 
                 # Deleting if lecture already processed
                 if left_time < timedelta(minutes=4):
-                    datePrint(f"{lecture.name[0][0]} у {group} уже была в {lecture.startTime()}. Удаление")
+                    datePrint(f"{lecture.info[0][0]} у {group} уже была в {lecture.startTime()}. Удаление")
                     notify_lectures[group].pop(0)
                 elif left_time <= timedelta(minutes=5):
                     group_userlist = db.get_users_in_group(group)

@@ -33,10 +33,10 @@ def parse_day(day, month, year, user_id, group = "КНТ-22-4"):
         lectures += "📚 Пар на цю дату немає\n\n"
     for lecture in parsed_lectures:
         # link = links[lecture.name]
-        lecture_name = escapeMarkdown(lecture.name)
+        lecture_name = escapeMarkdown(lecture.info)
         link = "Не додано"
-        if links.link_exist(user_id, db.get_group(user_id), lecture.name, lecture.f_type):
-            link = f"[тик]({escapeMarkdown(links.get_link(user_id, db.get_group(user_id), lecture.name, lecture.f_type))})"
+        if links.link_exist(user_id, db.get_group(user_id), lecture.info, lecture.f_type):
+            link = f"[тик]({escapeMarkdown(links.get_link(user_id, db.get_group(user_id), lecture.info, lecture.f_type))})"
         lectures += f"📚 Назва: *{lecture_name}*\n📖 Тип: {lecture.type}\n⏰ Час: *{lecture.startTime()} \- {lecture.endTime()}*\n🔗 Посилання: {link}\n\n"
     return lectures
 
@@ -58,7 +58,7 @@ def format_lectures(day, month, year, user_id, week_lectures_list):
     header_date = f"📆 Дата: {day}.{month}.{year}"
     lectures = ""
     for lecture_info in week_lectures_list:
-        lectures_info_list = lecture_info.name
+        lectures_info_list = lecture_info.info
         link = ""
         header_list = []
         types_list = []
@@ -161,7 +161,7 @@ async def format_week(user_id, group):
             lectures += f"<b>{week_days[day][0]} {day}</b>:\n"
         if len(week_days[day]) > 1:
             for lecture in week_days[day][1:]:
-                for lecture_info in lecture.name:
+                for lecture_info in lecture.info:
                     lecture_name = lecture_info[0]
                     lecture_type = lecture_info[1]
                     if display.has_display(user_id, group, lecture_name):

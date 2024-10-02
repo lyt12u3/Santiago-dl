@@ -71,7 +71,7 @@ async def create_lecture(message: types.Message):
 
         parsed_week_local = {}
         parsed_week_local[formatted_date] = [weekday]
-        parsed_week_local[formatted_date].append(Lecture(1, subject, "Лк", start_hours, start_minutes, end_hours, end_minutes))
+        parsed_week_local[formatted_date].append(Lecture(1, [subject, "Лк"], start_hours, start_minutes, end_hours, end_minutes))
 
         week_lectures[group] = parsed_week_local
         print(week_lectures[group])
