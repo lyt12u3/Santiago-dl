@@ -15,6 +15,16 @@ def formatDate(a_date):
         month = "0" + str(month)
     return day, month, year
 
+def formatWeekday(day):
+    weekdays = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
+    weekday = "Не визначено"
+    try:
+        weekday = weekdays[day]
+    except Exception as e:
+        pass
+    return weekday
+
+
 def getMonth():
     current = datetime_now()
     days = []

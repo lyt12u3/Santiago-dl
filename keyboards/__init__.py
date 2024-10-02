@@ -13,3 +13,8 @@ from .keyboards import delete_group_buttons
 from .keyboards import users_list_buttons
 from .keyboards import notify_buttons
 from .keyboards import display_buttons
+from .keyboards import editor_types_markup
+from .keyboards import editor_choose_markup
+from .keyboards import editor_automate
+from .keyboards import editor_finish
+from .keyboards import reply_editor_subjects

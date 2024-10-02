@@ -143,9 +143,43 @@ admin_settings_buttons.add('Вывести БД')
 admin_settings_buttons.add('Удалить пользователя')
 admin_settings_buttons.add('Изменить подписку')
 admin_settings_buttons.insert('Удалить группу')
+admin_settings_buttons.add('Создать пару')
 admin_settings_buttons.add('Сводка по группам')
 admin_settings_buttons.add('Список команд')
 admin_settings_buttons.add('⬅️ Назад')
+
+editor_types_markup = ReplyKeyboardMarkup(resize_keyboard=True, input_field_placeholder="Тип")
+editor_types_markup.add('Лк')
+editor_types_markup.insert('Пз')
+editor_types_markup.add('Лб')
+editor_types_markup.insert('Конс')
+
+editor_choose_markup = ReplyKeyboardMarkup(resize_keyboard=True, input_field_placeholder="Действие")
+editor_choose_markup.add('Добавить')
+editor_choose_markup.insert('Продолжить')
+
+def reply_editor_subjects(user_id, group):
+    if subjects.subjects_exist(group):
+        current_subj_arr_line = subjects.get_subjects(group)
+        current_subj_arr = current_subj_arr_line.split(',')
+    else:
+        current_subj_arr = parser.parseSubjects(group)
+        subjects.set_subjects(group, current_subj_arr)
+
+    insert = False
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, input_field_placeholder="Название")
+    for subj in current_subj_arr:
+        if insert:
+            markup.insert(subj)
+            insert = False
+        else:
+            markup.add(subj)
+            insert = True
+    return markup
+
+editor_automate = ReplyKeyboardMarkup(resize_keyboard=True).add('Автоматическое определение')
+
+editor_finish = ReplyKeyboardMarkup(resize_keyboard=True).add('Сохранить').insert('Отменить')
 
 another_day_buttons = InlineKeyboardMarkup(row_width=1)
 another_day_buttons.add(InlineKeyboardButton(text="Інша дата", callback_data="another_day"), InlineKeyboardButton(text="⬅️ Назад", callback_data="back"))

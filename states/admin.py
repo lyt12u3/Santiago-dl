@@ -8,6 +8,11 @@ class AdminSettings(StatesGroup):
     ChangeNotify = State()
     ChangeGroup_Step1 = State()
     ChangeGroup_Step2 = State()
+    CreateLecture_Name = State()
+    CreateLecture_Type = State()
+    CreateLecture_AddOrContinue = State()
+    CreateLecture_Time = State()
+    CreateLecture_Finish = State()
 
 class AdminPrikoli(StatesGroup):
     MessageWait = State()

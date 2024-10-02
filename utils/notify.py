@@ -57,6 +57,8 @@ async def notify_process(wait_for):
                         if send:
                             notify_message_header = ", ".join(notify_message_header_list)
                             types = type_optimize(notify_message_types_list)
+                            if len(notify_message_links) < 1:
+                                notify_message_links = "Не додано"
                             await sendNotify(user, group,f'🔔 <b>{notify_message_header}</b> через <b>5</b> хвилин! 🔔\n\n⏰ Час: {lecture.startTime()} - {lecture.endTime()}\n📖 Тип: {types}\n🔗 Посилання: {notify_message_links}')
                     notify_lectures[group].pop(0)
 

@@ -49,61 +49,12 @@ async def migrate(message: types.Message):
                     notify.add_notify(user_id, group, subj, notify_status)
     await bot.edit_message_text("Перенос данных завершен ✅", message.from_user.id, msg.message_id)
 
-@dp.message_handler(commands=['create_lecture'])
-async def create_lecture(message: types.Message):
-    if message.from_user.id in ADMINS:
-        await message.answer('Ожидание ввода в консоль 🔄️')
-        subject = input("Subject: ")
-        start = input("Start time (hh:mm): ")
-        end = input("End time (hh:mm): ")
-        user_id = message.from_user.id
-        group = db.get_group(user_id)
-
-        weekdays = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
-
-        start_hours, start_minutes = start.split(':')
-        end_hours, end_minutes = end.split(':')
-
-        date = datetime_now()
-        formatted_date = date.strftime("%d.%m.%Y")
-        day, month, year = formatted_date.split(".")
-        weekday = weekdays[date.weekday()]
-
-        parsed_week_local = {}
-        parsed_week_local[formatted_date] = [weekday]
-        parsed_week_local[formatted_date].append(Lecture(1, [subject, "Лк"], start_hours, start_minutes, end_hours, end_minutes))
-
-        week_lectures[group] = parsed_week_local
-        print(week_lectures[group])
-        notify_lectures[group] = week_lectures[group][f"{day}.{month}.{year}"][1:]
-
-
 @dp.message_handler(commands=['notify_test_delete'])
 async def notify_test_delete(message: types.Message):
     if message.from_user.id in ADMINS:
         user_id = message.from_user.id
         notify.delete_all_notify(user_id)
         await message.answer("Done ✅")
-
-# @dp.message_handler(commands=['notify_test'])
-# async def notify_test(message: types.Message):
-#     if message.from_user.id in config.admins:
-#         user_id = message.from_user.id
-#         await message.answer("Тут ви можете змінити налаштування повідомлень для кожного предмету 😀", parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=notify_buttons(user_id))
-#
-# @dp.callback_query_handler(lambda call: call.data == "change_all")
-# async def callback_change(callback: types.CallbackQuery):
-#     user_id = callback.from_user.id
-#     notify.update_all_notity(user_id, not notify.has_positive_notify(user_id))
-#     await callback.message.edit_text("Тут ви можете змінити налаштування повідомлень для кожного предмету 😀", parse_mode="MarkdownV2", reply_markup=notify_buttons(user_id))
-#
-# @dp.callback_query_handler(lambda call: re.match(r'change_.+', call.data))
-# async def callback_change(callback: types.CallbackQuery):
-#     subject = callback.data[7:]
-#     user_id = callback.from_user.id
-#     print(subject)
-#     notify.update_notify(user_id, subject, not notify.get_notify(user_id, subject))
-#     await callback.message.edit_text("Тут ви можете змінити налаштування повідомлень для кожного предмету 😀", parse_mode="MarkdownV2", reply_markup=notify_buttons(user_id))
 
 
 @dp.message_handler(commands=['get_username'])

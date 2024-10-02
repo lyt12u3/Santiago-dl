@@ -20,9 +20,16 @@ async def today(message: types.Message):
     end = now + timedelta(days=6 - weekday)
     group = db.get_group(message.from_user.id)
     keys = list(week_lectures.keys())
-    if group not in keys:
-        week_lectures[group] = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
-    lectures = format_lectures(day, month, year, message.from_user.id, week_lectures[group][f"{day}.{month}.{year}"][1:])
+    if group in keys:
+        day_keys = list(week_lectures[group].keys())
+        if f"{day}.{month}.{year}" in day_keys:
+            week_lectures_to_send = week_lectures[group]
+        else:
+            week_lectures_to_send = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+    else:
+        week_lectures_to_send = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+
+    lectures = format_lectures(day, month, year, message.from_user.id, week_lectures_to_send[f"{day}.{month}.{year}"][1:])
     try:
         await message.answer(lectures, parse_mode="HTML", disable_web_page_preview=True)
     except Exception as e:

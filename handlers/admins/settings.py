@@ -1,13 +1,14 @@
 import re
+from datetime import timedelta
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from keyboards import admin_settings_buttons, menu_buttons, delete_group_buttons, users_list_buttons
-from loader import dp, db, groups, bot
+from keyboards import admin_settings_buttons, menu_buttons, delete_group_buttons, users_list_buttons, editor_types_markup, editor_choose_markup, reply_editor_subjects, editor_automate, editor_finish
+from loader import dp, db, groups, bot, week_lectures, notify_lectures
 from states import AdminSettings
-from utils import parser
+from utils import parser, Lecture
 from utils.updater import update_lectures_process
-from utils.utilities import formatDate, datetime_now, escapeMarkdown
+from utils.utilities import formatDate, datetime_now, escapeMarkdown, formatWeekday, formatChar
 
 
 @dp.message_handler(text='⬅️ Назад', state=AdminSettings.SettingsMenu)
@@ -119,6 +120,132 @@ async def process_delete_user(message: types.Message):
 async def change_user_group(message: types.Message):
     await message.answer('Не реализовано')
 
+@dp.message_handler(text='Создать пару', state=AdminSettings.SettingsMenu)
+async def create_lecture_base(message: types.Message):
+    user_id = message.from_user.id
+    group = db.get_group(user_id)
+    await message.answer('✍️ Создание пары\n\nВыберите или введите название предмета', reply_markup=reply_editor_subjects(user_id, group))
+    await AdminSettings.CreateLecture_Name.set()
+
+@dp.message_handler(state=AdminSettings.CreateLecture_Name)
+async def create_lecture_name(message: types.Message, state: FSMContext):
+    subj_name = message.text
+    data = await state.get_data()
+    lecture_info = data.get('arr')
+    if not lecture_info:
+        lecture_info = []
+        await state.update_data(arr=lecture_info)
+    await state.update_data(subj_name=subj_name)
+    await message.answer(f'✍️ Создание пары\n\n📚 Название: {subj_name}\n\nВыберите тип пары', reply_markup=editor_types_markup)
+    await AdminSettings.CreateLecture_Type.set()
+
+@dp.message_handler(state=AdminSettings.CreateLecture_Type)
+async def create_lecture_type(message: types.Message, state: FSMContext):
+    info = await state.get_data()
+    subj_type = message.text
+    subj_name = info.get('subj_name')
+    lecture_info = info.get('arr')
+    lecture_info.append([subj_name, subj_type])
+    print(f'{lecture_info}')
+    await state.update_data(arr=lecture_info)
+
+    arr_information = []
+    for description in lecture_info:
+        arr_information.append(f'{description[0]} {description[1]}')
+    line = ', '.join(arr_information)
+
+    await message.answer(f'✍️ Создание пары\n\n📚 Информация: {line}\n\nДобавить еще один предмет или продолжить?', reply_markup=editor_choose_markup)
+    await AdminSettings.CreateLecture_AddOrContinue.set()
+
+@dp.message_handler(text='Добавить', state=AdminSettings.CreateLecture_AddOrContinue)
+async def create_lecture_add(message: types.Message):
+    user_id = message.from_user.id
+    group = db.get_group(user_id)
+    await message.answer('✍️ Создание пары\n\nВыберите или введите название предмета', reply_markup=reply_editor_subjects(user_id, group))
+    await AdminSettings.CreateLecture_Name.set()
+
+@dp.message_handler(text='Продолжить', state=AdminSettings.CreateLecture_AddOrContinue)
+async def create_lecture_time(message: types.Message):
+    await message.answer('✍️ Создание пары\n\nВведите время начала или автоматическое определение времени \(Пара начнется через 6 минут после добавления для получения уведомления\)\n\nФормат ввода: *11:15*\n\nВнимание ⚠️ После указания времени пара будет создана\!', parse_mode="MarkdownV2", reply_markup=editor_automate)
+    await AdminSettings.CreateLecture_Time.set()
+
+@dp.message_handler(text='Автоматическое определение',state=AdminSettings.CreateLecture_Time)
+async def create_lecture_automate(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    group = db.get_group(user_id)
+
+    current_time = datetime_now() + timedelta(minutes=6)
+    minute = formatChar(current_time.time().minute)
+    hour = formatChar(current_time.time().hour)
+    day, month, year = formatDate(current_time)
+    date = f"{day}.{month}.{year}"
+
+    info = await state.get_data()
+    lecture_info = info.get('arr')
+
+    arr_information = []
+    for description in lecture_info:
+        arr_information.append(f'{description[0]} {description[1]}')
+    line = ', '.join(arr_information)
+
+    weekday_number = current_time.weekday()
+    start = current_time - timedelta(days=weekday_number)
+    end = current_time + timedelta(days=6 - weekday_number)
+    weekday = formatWeekday(current_time.weekday())
+    parsed_week = {}
+    keys = list(week_lectures.keys())
+    if group in keys:
+        day_keys = list(week_lectures[group].keys())
+        if f"{day}.{month}.{year}" in day_keys:
+            week_lectures[group][date].append(Lecture("1", lecture_info, str(hour), str(minute), str(hour), str(minute)))
+        else:
+            week_lectures[group] = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+            week_lectures[group][date].append(Lecture("1", lecture_info, str(hour), str(minute), str(hour), str(minute)))
+    else:
+        week_lectures[group] = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+        week_lectures[group][date].append(Lecture("1", lecture_info, str(hour), str(minute), str(hour), str(minute)))
+    notify_lectures[group] = week_lectures[group][date][1:]
+    await message.answer(f'✍️ Создание пары\n\n📚 Информация: {line}\n⏰ Время: {hour}:{minute} - {hour}:{minute}\n\nПара создана ✅', reply_markup=admin_settings_buttons)
+    await state.finish()
+
+@dp.message_handler(state=AdminSettings.CreateLecture_Time)
+async def create_lecture_time_process(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    group = db.get_group(user_id)
+
+    hour, minute = message.text.split(':')
+
+    info = await state.get_data()
+    lecture_info = info.get('arr')
+
+    arr_information = []
+    for description in lecture_info:
+        arr_information.append(f'{description[0]} {description[1]}')
+    line = ', '.join(arr_information)
+
+    current_time = datetime_now()
+    day, month, year = formatDate(current_time)
+    date = f"{day}.{month}.{year}"
+    weekday_number = current_time.weekday()
+    start = current_time - timedelta(days=weekday_number)
+    end = current_time + timedelta(days=6 - weekday_number)
+    weekday = formatWeekday(current_time.weekday())
+    parsed_week = {}
+    keys = list(week_lectures.keys())
+    if group in keys:
+        day_keys = list(week_lectures[group].keys())
+        if f"{day}.{month}.{year}" in day_keys:
+            week_lectures[group][date].append(Lecture("1", lecture_info, str(hour), str(minute), str(hour), str(minute)))
+        else:
+            week_lectures[group] = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+            week_lectures[group][date].append(Lecture("1", lecture_info, str(hour), str(minute), str(hour), str(minute)))
+    else:
+        week_lectures[group] = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+        week_lectures[group][date].append(Lecture("1", lecture_info, str(hour), str(minute), str(hour), str(minute)))
+    notify_lectures[group] = week_lectures[group][date][1:]
+    await message.answer(f'✍️ Создание пары\n\n📚 Информация: {line}\n⏰ Время: {hour}:{minute} - {hour}:{minute}\n\nПара создана ✅', reply_markup=admin_settings_buttons)
+    await state.finish()
+
 @dp.message_handler(text='Сводка по группам', state=AdminSettings.SettingsMenu)
 async def groups_info(message: types.Message):
     users = db.read_all()
@@ -143,49 +270,12 @@ async def groups_info(message: types.Message):
 
 @dp.message_handler(text='Список команд', state=AdminSettings.SettingsMenu)
 async def change_user_group(message: types.Message):
-    await message.answer('Список админ-команд:\n\n/notify - Отправить сообщение всем пользователям\n/notify_myself - Отправить сообщение себе от лица бота\n/send_to_igor - Отправить сообщение Игорю\n/create_lecture - Создать тестовую пару (Опасно, использовать только на тестовом боте)\n/update_lectures - Обновить пары\n/parse_api - Загрузить группы через апи\n/clear_state - Сбросить состояние\n/text_add_link - Я хз там чет в консоли ссылки какиета\n/get_username - Получить ник по ид\n/notify_test - Тестовое меню уведомлений\n/notify_test_delete - Очистить бд на себя с уведомлениями')
-
-# @dp.message_handler(text='Изменить группу', state=MenuState.Admin_SettingsMenu)
-# async def change_user_group(message: types.Message):
-#     result = db.read_all()
-#     markup = ReplyKeyboardMarkup(resize_keyboard=True, input_field_placeholder="Пользователь")
-#     if len(result) > 0:
-#         for el in result:
-#             notify_status = '❌'
-#             if el[3] == 1:
-#                 notify_status = '✅'
-#             markup.add(f'{el[1]} | {el[2]} | {notify_status}')
-#         await message.answer('Выберите пользователя', reply_markup=markup)
-#         await MenuState.Admin_ChangeGroup_Step1.set()
-#     else:
-#         await message.answer('В БД пусто 🫤')
-#
-# @dp.message_handler(lambda message: not re.match(r'(\d+).*', message.text), state=MenuState.Admin_ChangeGroup_Step1)
-# async def process_change_user_group_invalid(message: types.Message):
-#     await message.answer('Неверно выбран пользователь')
-#
-# @dp.message_handler(state=MenuState.Admin_ChangeGroup_Step1)
-# async def process_delete_user(message: types.Message, state: FSMContext):
-#     # user_id = message.text.replace("ID: ", '')
-#     user_id = re.search(r'(\d+).*', message.text).group(1)
-#     await state.update_data(id = user_id)
-#     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-#     markup.add('КНТ-22-4').add('ВПВПС-22-3').add('ІТУ-22-1')
-#     await message.answer("Выберите новую группу", reply_markup=markup)
-#     await MenuState.Admin_ChangeGroup_Step2.set()
-#
-# @dp.message_handler(lambda message: message.text not in ["КНТ-22-4", "ВПВПС-22-3", "ІТУ-22-1"], state=MenuState.Admin_ChangeGroup_Step2)
-# async def process_gender_invalid(message: types.Message):
-#     return await message.reply("Указанная группа не поддерживается 🫤\nПожалуйста, выберите группу из предложенных")
-#
-# @dp.message_handler(state=MenuState.Admin_ChangeGroup_Step2)
-# async def process_nure_group(message: types.Message, state: FSMContext):
-#     data = await state.get_data()
-#     group = message.text
-#     db.update_nure_group(data['id'], group)
-#     await MenuState.Admin_SettingsMenu.set()
-#     await message.answer(f'Группа пользователя {data["id"]} была изменена на {group}', reply_markup=admin_settings_markup)
-#     # db.update_nure_group()
-#     # await message.answer('Вы зарегистрировались!')
-#     # day, month, year = formatDate(datetime.now())
-#     # await message.answer(f'📆 Дата: {day}.{month}.{year}\n\nВиберіть дію', reply_markup=menu_buttons(message.from_user.id))
+    await message.answer('Список админ-команд:\n\n'
+                         '/notify - Отправить сообщение всем пользователям\n'
+                         '/notify_myself - Отправить сообщение себе от лица бота\n'
+                         '/send_to_igor - Отправить сообщение Игорю\n'
+                         '/update_lectures - Обновить пары\n'
+                         '/parse_api - Загрузить группы через апи\n'
+                         '/clear_state - Сбросить состояние\n'
+                         '/text_add_link - Я хз там чет в консоли ссылки какиета\n'
+                         '/get_username - Получить ник по ид\n')
