@@ -19,6 +19,10 @@ async def start_command(message: types.Message):
         day, month, year = formatDate(datetime_now())
         await message.answer(f'📆 Дата: {day}.{month}.{year}\n\nВиберіть дію', reply_markup=menu_buttons(message.from_user.id))
 
+@dp.message_handler(state=UserWait.nure_group)
+async def group_wait(message: types.Message):
+    await message.answer('Для роботи бота потрібно обрати свою групу', reply_markup=choose_group_buttons())
+
 @dp.callback_query_handler(text="no_group", state=UserWait.nure_group)
 async def add_group_start(callback: types.CallbackQuery):
     await UserWait.add_group.set()

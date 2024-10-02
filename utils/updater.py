@@ -26,8 +26,8 @@ async def auto_updater(wait_for):
                     debug("Получение расписания")
                     week_lectures[group[0]] = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group[0])
                     notify_lectures[group[0]] = week_lectures[group[0]][f"{day}.{month}.{year}"][1:]
-                except:
-                    print(f"Error updating group {group[0]}")
+                except Exception as e:
+                    print(f"Error updating group {group[0]}: {e.args[0]}")
         await asyncio.sleep(wait_for)
 
 async def update_lectures_process():
@@ -48,5 +48,5 @@ async def update_lectures_process():
             debug("Получение расписания")
             week_lectures[group[0]] = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group[0])
             notify_lectures[group[0]] = week_lectures[group[0]][f"{day}.{month}.{year}"][1:]
-        except:
-            print(f"Error updating group {group[0]}")
+        except Exception as e:
+            print(f"Error updating group {group[0]}: {e.args[0]}")

@@ -3,22 +3,26 @@ import re
 from datetime import timedelta
 from aiogram import types
 from data import config
-from keyboards import menu_buttons, month_buttons, another_day_buttons, settings_buttons, admin_settings_buttons
+from keyboards import menu_buttons, month_buttons, another_day_buttons, settings_buttons, admin_settings_buttons, choose_group_buttons
 from loader import dp, db, week_lectures, ADMINS
-from states import AdminSettings
+from states import AdminSettings, UserWait
 from utils import parser
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from utils.utilities import datetime_now, formatDate, format_lectures, debug, format_week
+from utils.utilities import datetime_now, formatDate, format_lectures, debug, format_week, group_check
 
 
 @dp.message_handler(text='Пари на сьогодні')
 async def today(message: types.Message):
+    if not group_check(message.from_user.id):
+        await UserWait.nure_group.set()
+        await message.answer('Для роботи бота потрібно обрати свою групу', reply_markup=choose_group_buttons())
+        return
+    group = db.get_group(message.from_user.id)
     now = datetime_now()
     day, month, year = formatDate(now)
     weekday = now.weekday()
     start = now - timedelta(days=weekday)
     end = now + timedelta(days=6 - weekday)
-    group = db.get_group(message.from_user.id)
     keys = list(week_lectures.keys())
     if group in keys:
         day_keys = list(week_lectures[group].keys())
@@ -38,6 +42,10 @@ async def today(message: types.Message):
 
 @dp.message_handler(text='Пари на завтра')
 async def tomorrow(message: types.Message):
+    if not group_check(message.from_user.id):
+        await UserWait.nure_group.set()
+        await message.answer('Для роботи бота потрібно обрати свою групу', reply_markup=choose_group_buttons())
+        return
     date = datetime_now() + timedelta(days=1)
     day, month, year = formatDate(date)
     weekday = date.weekday()
@@ -69,6 +77,10 @@ current_week = {}
 
 @dp.message_handler(text='Пари на тиждень')
 async def week(message: types.Message):
+    if not group_check(message.from_user.id):
+        await UserWait.nure_group.set()
+        await message.answer('Для роботи бота потрібно обрати свою групу', reply_markup=choose_group_buttons())
+        return
     group = db.get_group(message.from_user.id)
     now = datetime_now()
     weekday = now.weekday()
@@ -147,6 +159,10 @@ async def week_forward(callback: types.CallbackQuery):
 
 @dp.message_handler(text='Обрати дату')
 async def choose_date(message: types.Message):
+    if not group_check(message.from_user.id):
+        await UserWait.nure_group.set()
+        await message.answer('Для роботи бота потрібно обрати свою групу', reply_markup=choose_group_buttons())
+        return
     if (not db.user_exists(message.from_user.id)):
         return
     await message.answer('📆 Виберіть дату\n\nДоступні наступні 30 днів', reply_markup=month_buttons())
@@ -188,10 +204,18 @@ async def callback_back(callback: types.CallbackQuery):
 
 @dp.message_handler(text='⚙️ Налаштування')
 async def settings(message: types.Message):
+    if not group_check(message.from_user.id):
+        await UserWait.nure_group.set()
+        await message.answer('Для роботи бота потрібно обрати свою групу', reply_markup=choose_group_buttons())
+        return
     await message.answer("⚙️ Виберіть дію", reply_markup=settings_buttons(message.from_user.id))
 
 @dp.message_handler(text='⚙️ Админка')
 async def admin_settings(message: types.Message):
     if message.from_user.id in ADMINS:
+        if not group_check(message.from_user.id):
+            await UserWait.nure_group.set()
+            await message.answer('Для роботи бота потрібно обрати свою групу', reply_markup=choose_group_buttons())
+            return
         await AdminSettings.SettingsMenu.set()
         await message.answer("Виберіть дію", reply_markup=admin_settings_buttons)

@@ -245,5 +245,12 @@ def additionalDebug(text):
     message = f'[{formatChar(now.hour)}:{formatChar(now.minute)}:{formatChar(now.second)}]: {text}'
     print(f"{message}")
 
+def group_check(user_id):
+    try:
+        res = db.get_group(user_id)
+        return True
+    except Exception as e:
+        return False
+
 def datetime_now():
     return datetime.now()

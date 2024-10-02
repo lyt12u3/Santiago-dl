@@ -116,7 +116,7 @@ def parseSubjects(group="КНТ-22-4"):
     try:
         # all_groups = Groups("database.db")
         group_code = groups.get_code(group)
-        r = requests.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:1616752339325756:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:01.09.2024,31.01.2025,{group_code},0:")
+        r = requests.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:527954707314034:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:01.09.2024,31.01.2025,{group_code},0:")
         # if group == "КНТ-22-4":
         #     r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:201:622623529402425:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:01.09.2023,31.01.2024,10306577,0:")
         # elif group == "ВПВПС-22-3":
@@ -131,8 +131,8 @@ def parseSubjects(group="КНТ-22-4"):
             result_subjects.append(el.text)
 
         return result_subjects
-    except:
-        print(f"Error {group}")
+    except Exception as e:
+        print(f"Error {group}: {e.args[0]}")
 
 
 def parseDay(day, month, year, group="КНТ-22-4"):
