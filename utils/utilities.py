@@ -43,10 +43,11 @@ def parse_day(day, month, year, user_id, group = "КНТ-22-4"):
         lectures += "📚 Пар на цю дату немає\n\n"
     for lecture in parsed_lectures:
         # link = links[lecture.name]
-        lecture_name = escapeMarkdown(lecture.info)
+        lecture_name = lecture.info[0]
+        lecture_type = lecture.info[1]
         link = "Не додано"
-        if links.link_exist(user_id, db.get_group(user_id), lecture.info, lecture.f_type):
-            link = f"[тик]({escapeMarkdown(links.get_link(user_id, db.get_group(user_id), lecture.info, lecture.f_type))})"
+        if links.link_exist(user_id, db.get_group(user_id), lecture_name, lecture_type):
+            link = f"тик({escapeMarkdown(links.get_link(user_id, db.get_group(user_id), lecture_name, lecture_type))})"
         lectures += f"📚 Назва: *{lecture_name}*\n📖 Тип: {lecture.type}\n⏰ Час: *{lecture.startTime()} \- {lecture.endTime()}*\n🔗 Посилання: {link}\n\n"
     return lectures
 
@@ -65,6 +66,7 @@ def format_lectures(day, month, year, user_id, week_lectures_list):
 
     hidden_counter = 0
     visible_counter = 0
+    count = True
     header_date = f"📆 Дата: {day}.{month}.{year}"
     lectures = ""
     for lecture_info in week_lectures_list:
@@ -72,12 +74,15 @@ def format_lectures(day, month, year, user_id, week_lectures_list):
         link = ""
         header_list = []
         types_list = []
+        count = True
         if len(lectures_info_list) > 1:
             for lecture in lectures_info_list:
                 lecture_name = lecture[0]
                 lecture_type = lecture[1]
                 if display.has_display(user_id, group, lecture_name):
-                    visible_counter += 1
+                    if count:
+                        visible_counter += 1
+                        count = False
                     header_list.append(f" <b>{lecture_name}</b>")
                     types_list.append([lecture_name,lecture_type])
                     if links.link_exist(user_id, group, lecture_name, lecture_type):
@@ -93,10 +98,11 @@ def format_lectures(day, month, year, user_id, week_lectures_list):
         else:
             lecture_name = lectures_info_list[0][0]
             lecture_type = type_format(lectures_info_list[0][1])
+            lecture_non_format_type = lectures_info_list[0][1]
             if display.has_display(user_id, group, lecture_name):
                 visible_counter += 1
-                if links.link_exist(user_id, group, lecture_name, lecture_type):
-                    link = hlink("[тик]", links.get_link(user_id, group, lecture_name, lecture_type))
+                if links.link_exist(user_id, group, lecture_name, lecture_non_format_type):
+                    link = hlink("тик", links.get_link(user_id, group, lecture_name, lecture_non_format_type))
                 if len(link) < 1:
                     link = "Не додано"
                 lectures += f"📚 Назва: <b>{lecture_name}</b>\n📖 Тип: <b>{lecture_type}</b>\n⏰ Час: <b>{lecture_info.startTime()}</b> - <b>{lecture_info.endTime()}</b>\n🔗 Посилання: {link}\n\n"

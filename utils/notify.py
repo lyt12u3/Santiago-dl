@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from loader import db, links, bot, notify_lectures, notify, display
+from loader import db, links, bot, notify_lectures, notify, display, subjects
 from aiogram.utils import exceptions
 from aiogram.utils.markdown import hlink
 from utils.utilities import datetime_now, additionalDebug, datePrint, type_optimize
@@ -33,6 +33,7 @@ async def notify_process(wait_for):
                     notify_lectures[group].pop(0)
                 elif left_time <= timedelta(minutes=5):
                     group_userlist = db.get_users_in_group(group)
+                    print(f"group_list:")
                     for userlist in group_userlist:
                         send = False
 
@@ -41,6 +42,7 @@ async def notify_process(wait_for):
                         notify_message_links = ""
 
                         user = userlist[0]
+                        print(user)
 
                         for lecture_info in lectures_list:
                             lecture_name = lecture_info[0]
@@ -48,8 +50,16 @@ async def notify_process(wait_for):
                             if not notify.notify_exist(user, group, lecture_name):
                                 notify.add_notify(user, group, lecture_name, db.get_notify_status(user))
                             if notify.get_notify(user, group, lecture_name):
+                                print(f"user {user} has notify for {lecture_name}")
+                                if not display.display_exist(user, group):
+                                    current_subj_arr_line = subjects.get_subjects(group)
+                                    current_subj_arr = current_subj_arr_line.split(',')
+                                    line = ",".join(current_subj_arr)
+                                    display.set_display(user, group, line)
                                 if display.has_display(user, group, lecture_name):
+                                    print(f"user {user} has display for {lecture_name}")
                                     send = True
+                                    print(f"send = {send}\n\n")
                                     notify_message_header_list.append(f"<b>{lecture_name}</b>")
                                     notify_message_types_list.append([lecture_name, lecture_type])
                                     if links.link_exist(user, group, lecture_name, lecture_type):

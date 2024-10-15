@@ -4,7 +4,7 @@ from datetime import timedelta
 from aiogram import types
 from data import config
 from keyboards import menu_buttons, month_buttons, another_day_buttons, settings_buttons, admin_settings_buttons, choose_group_buttons
-from loader import dp, db, week_lectures, ADMINS
+from loader import dp, db, week_lectures, ADMINS, display
 from states import AdminSettings, UserWait
 from utils import parser
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -97,11 +97,12 @@ async def week(message: types.Message):
 
 @dp.callback_query_handler(text="week_forward")
 async def week_forward(callback: types.CallbackQuery):
-    group = db.get_group(callback.from_user.id)
+    user_id = callback.from_user.id
+    group = db.get_group(user_id)
 
     global current_week
-    start = current_week[callback.from_user.id] + timedelta(days=7)
-    current_week[callback.from_user.id] = start
+    start = current_week[user_id] + timedelta(days=7)
+    current_week[user_id] = start
 
     end = start + timedelta(days=6)
     week_days = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
@@ -110,6 +111,7 @@ async def week_forward(callback: types.CallbackQuery):
     date = f"{day}.{month}.{year}"
     lectures = f"📆 {list(week_days.keys())[0]} - {list(week_days.keys())[-1]}\n\n"
     for day in week_days:
+        visible_counter = 0
         if date == day:
             lectures += f"<b>👉 {week_days[day][0]} {day} 👈</b>\n"
         else:
@@ -119,8 +121,13 @@ async def week_forward(callback: types.CallbackQuery):
                 for lecture_info in lecture.info:
                     lecture_name = lecture_info[0]
                     lecture_type = lecture_info[1]
-                    lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture_name}</b> {lecture_type}\n"
+                    if display.has_display(user_id, group, lecture_name):
+                        lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture_name}</b> {lecture_type}\n"
+                        visible_counter += 1
         else:
+            lectures += "В цей день пар немає 🥰\n"
+            visible_counter += 1
+        if visible_counter < 1:
             lectures += "В цей день пар немає 🥰\n"
         lectures += "\n"
 
@@ -128,19 +135,21 @@ async def week_forward(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text="week_back")
 async def week_forward(callback: types.CallbackQuery):
-    group = db.get_group(callback.from_user.id)
+    user_id = callback.from_user.id
+    group = db.get_group(user_id)
 
     global current_week
-    start = current_week[callback.from_user.id] - timedelta(days=7)
-    current_week[callback.from_user.id] = start
+    start = current_week[user_id] - timedelta(days=7)
+    current_week[user_id] = start
 
     end = start + timedelta(days=6)
     week_days = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
 
     day, month, year = formatDate(datetime_now())
     date = f"{day}.{month}.{year}"
-    lectures = f"📆 {list(week_days.keys())[0]} \- {list(week_days.keys())[-1]}\n\n"
+    lectures = f"📆 {list(week_days.keys())[0]} - {list(week_days.keys())[-1]}\n\n"
     for day in week_days:
+        visible_counter = 0
         if date == day:
             lectures += f"<b>👉 {week_days[day][0]} {day} 👈</b>\n"
         else:
@@ -150,8 +159,13 @@ async def week_forward(callback: types.CallbackQuery):
                 for lecture_info in lecture.info:
                     lecture_name = lecture_info[0]
                     lecture_type = lecture_info[1]
-                    lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture_name}</b> {lecture_type}\n"
+                    if display.has_display(user_id, group, lecture_name):
+                        lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture_name}</b> {lecture_type}\n"
+                        visible_counter += 1
         else:
+            lectures += "В цей день пар немає 🥰\n"
+            visible_counter += 1
+        if visible_counter < 1:
             lectures += "В цей день пар немає 🥰\n"
         lectures += "\n"
 
