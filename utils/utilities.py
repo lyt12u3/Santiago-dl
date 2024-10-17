@@ -191,7 +191,7 @@ async def format_week(user_id, group):
         lectures += "\n"
     return lectures
 
-def get_links(user_id):
+def get_links(user_id, text = True):
     group = db.get_group(user_id)
     if subjects.subjects_exist(group):
         current_links_arr_line = subjects.get_subjects(group)
@@ -199,7 +199,9 @@ def get_links(user_id):
     else:
         current_links_arr = parser.parseSubjects(group)
         subjects.set_subjects(group, current_links_arr)
-    current_links = "🔗 Ваші посилання:\n\n"
+    current_links = ""
+    if text:
+        current_links = "🔗 Ваші посилання:\n\n"
     for el in current_links_arr:
         if links.any_link_exist(user_id, group, el):
             links_types = ""
@@ -216,9 +218,9 @@ def get_links(user_id):
             # full_link = f'https://meet.google.com/{link}'
             current_links += f"📚 {escapeMarkdown(el)}: {links_types}\n"
         else:
-            current_links += f"📚 {escapeMarkdown(el)}: Не додано\n"
+            if text:
+                current_links += f"📚 {escapeMarkdown(el)}: Не додано\n"
     return current_links
-
 
 def formatChar(input):
     if len(str(input)) == 1:

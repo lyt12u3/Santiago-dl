@@ -1,6 +1,6 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from data import config
-from loader import groups, db, subjects, notify, display, ADMINS
+from loader import groups, db, subjects, notify, display, ADMINS, bot
 from utils import parser
 from utils.utilities import getMonth
 
@@ -24,6 +24,7 @@ def settings_buttons(user_id):
     markup.insert("Повідомлення")
     markup.insert("Змінити групу")
     markup.add("Відображення")
+    markup.add("Поділитися посиланнями")
     markup.add("⬅️ Назад")
     return markup
 
@@ -186,3 +187,25 @@ another_day_buttons.add(InlineKeyboardButton(text="Інша дата", callback_
 
 
 cancel_buttons = ReplyKeyboardMarkup(resize_keyboard=True).add('Скасувати')
+
+async def group_users(group):
+    markup = InlineKeyboardMarkup(row_width=3)
+    users_list = db.get_users_in_group(group)
+    insert = False
+    for user_obj in users_list:
+        user_id = user_obj[0]
+        username = str(user_id) ###### ЗАМЕНИТЬ НА ПУСТУЮ СТРОКУ
+        try:
+            user = await bot.get_chat(user_id)
+            username = '@' + user.username
+        except Exception as e:
+            pass
+        if len(username) > 1:
+            markup.insert(InlineKeyboardButton(username, callback_data=f"userid_{user_id}"))
+    return markup
+
+def recieve_interface(user_id):
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.insert(InlineKeyboardButton("Прийняти ✅", callback_data=f"accept_senderid_{user_id}"))
+    markup.insert(InlineKeyboardButton("Відхилити ❌", callback_data=f"decline_senderid_{user_id}"))
+    return markup

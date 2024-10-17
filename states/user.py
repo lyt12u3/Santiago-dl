@@ -5,6 +5,7 @@ class Settings(StatesGroup):
     GroupAdd = State()
     LinkAdd = State()
     LinkTypeSelect = State()
+    UserChoose = State()
 
 class UserWait(StatesGroup):
     nure_group = State()

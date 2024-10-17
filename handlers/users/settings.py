@@ -3,10 +3,10 @@ from datetime import timedelta
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from keyboards import settings_buttons, choose_group_buttons, cancel_buttons, menu_buttons, links_buttons, \
-    subjects_buttons, links_types, links_types_delete, notify_buttons, display_buttons
+    subjects_buttons, links_types, links_types_delete, notify_buttons, display_buttons, group_users, recieve_interface
 from loader import dp, db, groups_list, groups, week_lectures, notify_lectures, subjects, links, bot, notify, display
 from states import Settings
-from utils.utilities import debug, datetime_now, formatDate, get_links, escapeMarkdown
+from utils.utilities import debug, datetime_now, formatDate, get_links, escapeMarkdown, datePrint
 from utils import parser
 
 @dp.message_handler(text="⬅️ Назад")
@@ -223,3 +223,79 @@ async def links_settings_link_wait(message: types.Message, state: FSMContext):
     await message.answer(current_links, parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=links_buttons)
     await state.finish()
     debug(f"link of {subject} added by {user_id} from {group}")
+
+@dp.message_handler(text="Поділитися посиланнями")
+async def notify_test(message: types.Message):
+    user_id = message.from_user.id
+    group = db.get_group(user_id)
+
+    if subjects.subjects_exist(group):
+        current_subj_arr_line = subjects.get_subjects(group)
+        current_subj_arr = current_subj_arr_line.split(',')
+    else:
+        current_subj_arr = parser.parseSubjects(group)
+        subjects.set_subjects(group, current_subj_arr)
+    links_exist = False
+    for subj in current_subj_arr:
+        if links_exist:
+            break
+        for type in ["Лк", "Пз", "Лб", "Конс"]:
+            if links.link_exist(user_id, group, subj, type):
+                links_exist = True
+                break
+
+    if links_exist:
+        markup = await group_users(group)
+        await message.answer("⚙️ Оберіть користувача, з яким ви хочете поділитися посиланнями\n\nВам представлені користувачі з вашої групи, оберіть одного з них", parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=markup)
+    else:
+        await message.answer("Немає посилань, якими ви можете поділитись ⚠️")
+
+@dp.callback_query_handler(lambda call: re.match(r'userid_.+', call.data))
+async def callback_userid(callback: types.CallbackQuery):
+    user_recieve_id = callback.data.replace("userid_", "")
+    user_id = callback.from_user.id
+    group = db.get_group(user_id)
+    try:
+        user_recieve = await bot.get_chat(user_recieve_id)
+        user_recieve_username = '@' + user_recieve.username
+        sender_username = '@' + escapeMarkdown(callback.from_user.username)
+        sender_links = get_links(user_id, False)
+        markup = recieve_interface(user_id)
+        if len(sender_links) > 1:
+            sender_links = f"{sender_links}\n"
+        await bot.send_message(user_recieve_id,f"🔗 Користувач {sender_username} хоче поділитися з вами своїми посиланнями на пари\n\n{sender_links}*Зверніть увагу*, після прийняття вказані посилання будуть замінені та не зможуть бути відновлені до попереднього стану",parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=markup)
+        await callback.message.edit_text(f"Ви поділилися посиланнями з користувачем {user_recieve_username} ✅")
+    except Exception as e:
+        print(e.args[0])
+
+@dp.callback_query_handler(lambda call: re.match(r'accept_senderid_.+', call.data))
+async def callback_userid(callback: types.CallbackQuery):
+    sender_id = callback.data.replace("accept_senderid_", "")
+    user_id = callback.from_user.id
+    group = db.get_group(sender_id)
+    datePrint(f"links accepted by {user_id}. Sender {sender_id}")
+    if subjects.subjects_exist(group):
+        current_subj_arr_line = subjects.get_subjects(group)
+        current_subj_arr = current_subj_arr_line.split(',')
+    else:
+        current_subj_arr = parser.parseSubjects(group)
+        subjects.set_subjects(group, current_subj_arr)
+
+    for subj in current_subj_arr:
+        for type in ["Лк", "Пз", "Лб", "Конс"]:
+            if links.link_exist(sender_id, group, subj, type):
+                sender_link = links.get_link(sender_id, group, subj, type)
+                if links.link_exist(user_id, group, subj, type):
+                    links.update_link(user_id, group, subj, type, sender_link)
+                else:
+                    links.add_link(user_id, group, subj, type, sender_link)
+                datePrint(f"Subject {subj} {type} updated")
+
+    message = callback.message
+    await message.edit_text("Посилання були замінені ✅")
+
+@dp.callback_query_handler(lambda call: re.match(r'decline_senderid_.+', call.data))
+async def callback_userid(callback: types.CallbackQuery):
+    sender_id = callback.data.replace("decline_senderid_", "")
+    datePrint(f"links declined by {callback.from_user.id}. Sender {sender_id}")
+    await bot.delete_message(callback.from_user.id, callback.message.message_id)
