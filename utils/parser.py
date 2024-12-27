@@ -108,7 +108,7 @@ def parseWeek(day1, month1, year1, day2, month2, year2, group="КНТ-22-4"):
                 name = re.search(r'(.+)\s', pair.text).group()[:-1]
                 multiple_pairs.append([name, type])
             parsed_week[current_date].append(Lecture(pair_number, multiple_pairs, start_hours, start_minutes, end_hours, end_minutes))
-    print(parsed_week)
+    # print(parsed_week)
     return parsed_week
 
 
