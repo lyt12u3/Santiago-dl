@@ -127,6 +127,10 @@ def get_emoji(type):
         emoji = "🟢"
     elif type == "Лб":
         emoji = "🟣"
+    elif type == "Зал":
+        emoji = "⚪️"
+    elif type == "ІспКомб":
+        emoji = "🔵"
     return emoji
 
 def type_optimize(types):
@@ -152,6 +156,10 @@ def type_format(type):
         result = "Лабораторне заняття"
     elif type == "Конс":
         result = "Консультація"
+    elif type == "Зал":
+        result = "Залік"
+    elif type == "ІспКомб":
+        result = "Іспит комбінований"
     return result
 
 async def format_week(user_id, group):
