@@ -4,11 +4,12 @@ from datetime import timedelta
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from keyboards import admin_settings_buttons, menu_buttons, delete_group_buttons, users_list_buttons, editor_types_markup, editor_choose_markup, reply_editor_subjects, editor_automate, editor_finish
-from loader import dp, db, groups, bot, week_lectures, notify_lectures
+from loader import dp, db, groups, bot, week_lectures, notify_lectures, all_teachers
 from states import AdminSettings
 from utils import parser, Lecture
+from utils.parser import parse_all_teachers
 from utils.updater import update_lectures_process
-from utils.utilities import formatDate, datetime_now, escapeMarkdown, formatWeekday, formatChar
+from utils.utilities import formatDate, datetime_now, escapeMarkdown, formatWeekday, formatChar, make_unique
 
 
 @dp.message_handler(text='⬅️ Назад', state=AdminSettings.SettingsMenu)
@@ -267,6 +268,18 @@ async def groups_info(message: types.Message):
         await message.answer(f'Сводка по группам\:\n\n{strokes}\nВсего пользователей\: {len(users)}', parse_mode="MarkdownV2")
     else:
         await message.answer('В БД пусто 🫤')
+
+@dp.message_handler(text='Обновитть преподов', state=AdminSettings.SettingsMenu)
+async def update_all_teachers(message: types.Message):
+    await message.answer('Parsing...')
+    teachers_list = make_unique(parse_all_teachers())
+    if len(teachers_list) > 0:
+        all_teachers.truncate()
+        for teacher in teachers_list:
+            all_teachers.add_teacher(teacher[0], teacher[1])
+        await message.answer('Added all teachers to database')
+    else:
+        await message.answer('No teachers parsed')
 
 @dp.message_handler(text='Список команд', state=AdminSettings.SettingsMenu)
 async def change_user_group(message: types.Message):

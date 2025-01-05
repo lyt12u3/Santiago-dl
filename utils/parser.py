@@ -2,7 +2,7 @@ import requests
 import re
 from bs4 import BeautifulSoup as BS
 from loader import groups, groups_list, week_lectures, notify_lectures
-from utils.utilities import datetime_now
+from utils.utilities import datetime_now, debug
 
 
 def parseApiGroups():
@@ -60,6 +60,28 @@ class Lecture:
         self.start_hours = start_hours
         self.start_minutes = start_minutes
 
+class LectureTeacher:
+    def __init__(self, index, teacher, name, type, group, start_hours, start_minutes, end_hours, end_minutes):
+        self.index = index
+        self.teacher = teacher
+        self.name = name
+        self.type = type
+        self.group = group
+        self.start_hours = start_hours
+        self.start_minutes = start_minutes
+        self.end_hours = end_hours
+        self.end_minutes = end_minutes
+
+
+    def startTime(self):
+        return self.start_hours + ":" + self.start_minutes
+
+    def endTime(self):
+        return self.end_hours + ":" + self.end_minutes
+
+    def set_start_time(self, start_hours, start_minutes):
+        self.start_hours = start_hours
+        self.start_minutes = start_minutes
 
 def parseWeek(day1, month1, year1, day2, month2, year2, group="КНТ-22-4"):
     group_code = groups.get_code(group)
@@ -174,3 +196,95 @@ def parseDay(day, month, year, group="КНТ-22-4"):
         # print(f"{pari[i].index} пара: {pari[i].name}\n{pari[i].type}\nПочаток: {pari[i].start_hours}:{pari[i].start_minutes}\nКінець: {pari[i].end_hours}:{pari[i].end_minutes}\n")
 
     return lectures
+
+def parse_kafedras():
+    kafedras = []
+    try:
+        r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:4:1011919354201228::NO:::#")
+        html = BS(r.content.decode('windows-1251'), 'lxml')
+        div = html.find("div", id="TEACHS_AJAX")
+        table = div.find_all("table", class_="htmldbTabbedNavigationList")
+        result_a = table[1].find_all("a")
+        for el in result_a:
+            try:
+                name = el.text.replace("Кафедра ", "")
+                onclick = el.get('onclick')
+                number = re.search(',(.+)\)', onclick)
+                kafedras.append([name, number.group(1)])
+            except Exception as e:
+                print(f"Error during processing kafedras: {e}")
+    except requests.RequestException as e:
+        print(f"Error during request kafedras: {e}")
+    except Exception as e:
+        print(f"Error parsing kafedras: {e}")
+    return kafedras
+
+
+def parse_teachers(kaf,):
+    teachers = []
+    try:
+        link = f"https://cist.nure.ua/ias/app/tt/WEB_IAS_TT_AJX_TEACHS?p_id_fac=95&p_id_kaf={kaf}"
+        r = requests.get(link)
+        html = BS(r.content.decode('windows-1251'), 'lxml')
+        result = html.find("table", class_="t13Standard")
+        teachers_arr = result.find_all("td", class_="t13datatop")
+        for teacher in teachers_arr:
+            try:
+                line = teacher.find("a")
+                teacher_info_raw = line.get('onclick')
+                search = re.search("\('(.+)',(.+)\)", teacher_info_raw)
+                name, code = search.group(1), search.group(2)
+                teachers.append([name, code])
+            except:
+                pass
+    except requests.RequestException as e:
+        print(f"Error during request teachers: {e}")
+    except Exception as e:
+        print(f"Error parsing teachers: {e}")
+    return teachers
+
+
+def parse_all_teachers():
+    all_teachers = []
+    kafedras = parse_kafedras()
+    for kafedra in kafedras:
+        debug(f"Processing kafedra #{kafedra[1]}...")
+        teachers = parse_teachers(kafedra[1])
+        for teacher in teachers:
+            all_teachers.append(teacher)
+    return all_teachers
+
+def parse_teacher_week(day1, month1, year1, day2, month2, year2, teacher):
+    link = f"https://cist.nure.ua/ias/app/tt/f?p=778:202:611417407963254:::202:P202_FIRST_DATE,P202_LAST_DATE,P202_SOTR,P202_KAF:{day1}.{month1}.{year1},{day2}.{month2}.{year2},{teacher},0:"
+    r = requests.get(link)
+    html = BS(r.content, 'lxml')
+    rows = html.select('table.MainTT tr')[1:]
+
+    current_day = None
+    current_date = None
+    parsed_week = {}
+
+
+    for row in rows:
+        day_element = row.find('td', class_='date', colspan=True)
+        date_element = row.find('td', class_='date', colspan=False)
+        if day_element and date_element:
+            current_day = day_element.text
+            current_date = date_element.text
+            parsed_week[current_date] = [current_day]
+        else:
+            pair_number = row.find('td', class_='left').text
+
+            pair_time = row.find('td', class_='left').find_next_sibling().text
+            start = re.search(r'(.+)\s', pair_time).group().replace(" ", "")
+            end = re.search(r'\s(.+)', pair_time).group().replace(" ", "")
+            start_hours, start_minutes = start.split(':')
+            end_hours, end_minutes = end.split(':')
+
+            pair_data = row.find('td', bgcolor=True).getText()
+            name, type, app, group = pair_data[1:-1].split(" ")
+            group = group.replace(name, "")
+
+            parsed_week[current_date].append(LectureTeacher(pair_number, teacher, name, type, group, start_hours, start_minutes, end_hours, end_minutes))
+            # print(f"Name |{name}| type |{type}| app |{app}| group |{group}|")
+    return parsed_week

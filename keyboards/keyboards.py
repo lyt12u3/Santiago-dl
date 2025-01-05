@@ -9,6 +9,7 @@ def menu_buttons(user_id):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add('Пари на сьогодні').insert('Пари на завтра').insert('Пари на тиждень')
     markup.add('Обрати дату')
+    markup.add('Розклад викладача')
     markup.add('⚙️ Налаштування')
     if user_id in ADMINS:
         markup.insert('⚙️ Админка')
@@ -17,10 +18,6 @@ def menu_buttons(user_id):
 def settings_buttons(user_id):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add("Посилання")
-    # if db.get_notify_status(user_id) == 1:
-    #     markup.insert("Вимкнути повідомлення")
-    # else:
-    #     markup.insert("Увімкнути повідомлення")
     markup.insert("Повідомлення")
     markup.insert("Змінити групу")
     markup.add("Відображення")
@@ -141,11 +138,12 @@ admin_settings_buttons = ReplyKeyboardMarkup(resize_keyboard=True, input_field_p
 admin_settings_buttons.add('Обновить базу всех групп')
 admin_settings_buttons.insert('Обновление')
 admin_settings_buttons.add('Вывести БД')
-admin_settings_buttons.add('Удалить пользователя')
 admin_settings_buttons.add('Изменить подписку')
+admin_settings_buttons.add('Удалить пользователя')
 admin_settings_buttons.insert('Удалить группу')
 admin_settings_buttons.add('Создать пару')
 admin_settings_buttons.add('Сводка по группам')
+admin_settings_buttons.add('Обновить преподов')
 admin_settings_buttons.add('Список команд')
 admin_settings_buttons.add('⬅️ Назад')
 
@@ -208,4 +206,15 @@ def recieve_interface(user_id):
     markup = InlineKeyboardMarkup(row_width=2)
     markup.insert(InlineKeyboardButton("Прийняти ✅", callback_data=f"accept_senderid_{user_id}"))
     markup.insert(InlineKeyboardButton("Відхилити ❌", callback_data=f"decline_senderid_{user_id}"))
+    return markup
+
+def select_teachers(teachers, add = False):
+    markup = InlineKeyboardMarkup(row_width=2)
+    for teacher in teachers:
+        if add:
+            markup.insert(InlineKeyboardButton(teacher[0], callback_data=f"add_teacher_{teacher[1]}"))
+        else:
+            markup.insert(InlineKeyboardButton(teacher[0], callback_data=f"teacher_{teacher[1]}"))
+    if not add:
+        markup.add(InlineKeyboardButton('Додати ✏️', callback_data=f"teacher_add"))
     return markup

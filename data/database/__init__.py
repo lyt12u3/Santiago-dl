@@ -3,5 +3,7 @@ from .database import Links
 from .database import Subjects
 from .database import Groups
 from .database import AllGroups
+from .database import Teachers
+from .database import AllTeachers
 from .database import Notify
 from .database import Display

@@ -4,7 +4,7 @@ import dotenv
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from data import config
-from data.database import Links, Database, Subjects, Groups, AllGroups, Notify, Display
+from data.database import Links, Database, Subjects, Groups, AllGroups, Teachers, AllTeachers, Notify, Display
 from dotenv import load_dotenv
 
 additional_debug = True
@@ -28,6 +28,8 @@ db = Database(file)
 links = Links(file)
 subjects = Subjects(file)
 groups = Groups(file)
+all_teachers = AllTeachers(file)
+teachers = Teachers(file)
 groups_list = AllGroups("all_groups.db")
 notify = Notify(file)
 display = Display(file)
@@ -35,6 +37,8 @@ db.check_file()
 links.check_file()
 subjects.check_file()
 groups.check_file()
+all_teachers.check_file()
+teachers.check_file()
 groups_list.check_file()
 notify.check_file()
 display.check_file()

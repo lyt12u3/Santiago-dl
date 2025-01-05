@@ -230,6 +230,32 @@ def get_links(user_id, text = True):
                 current_links += f"📚 {escapeMarkdown(el)}: Не додано\n"
     return current_links
 
+
+def format_teachers_schedule(schedule, teacher_name):
+    day, month, year = formatDate(datetime_now())
+    date = f"{day}.{month}.{year}"
+    lectures = f"📆 {list(schedule.keys())[0]} - {list(schedule.keys())[-1]} {teacher_name}\n\n"
+    for day in schedule:
+        visible_counter = 0
+        if date == day:
+            lectures += f"<b>👉 {schedule[day][0]} {day} 👈</b>\n"
+        else:
+            lectures += f"<b>{schedule[day][0]} {day}</b>:\n"
+        if len(schedule[day]) > 1:
+            for lecture in schedule[day][1:]:
+                lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture.name}</b> {lecture.type} для {lecture.group}\n"
+        else:
+            lectures += "В цей день викладач вільний\n"
+        lectures += "\n"
+    return lectures
+
+def make_unique(arr):
+    unique_arr = []
+    for el in arr:
+        if el not in unique_arr:
+            unique_arr.append(el)
+    return unique_arr
+
 def formatChar(input):
     if len(str(input)) == 1:
         input = "0" + str(input)
