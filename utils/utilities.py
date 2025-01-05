@@ -1,3 +1,5 @@
+import pytz
+from tzlocal import get_localzone
 from datetime import datetime, timedelta
 from data import config
 from . import parser
@@ -295,4 +297,8 @@ def group_check(user_id):
         return False
 
 def datetime_now():
-    return datetime.now()
+    UKRAINE_TZ = pytz.timezone('Europe/Kiev')
+    server_timezone = get_localzone()
+    server_time = datetime.now(server_timezone)
+    ukraine_time = server_time.astimezone(UKRAINE_TZ)
+    return ukraine_time.replace(tzinfo=None)
