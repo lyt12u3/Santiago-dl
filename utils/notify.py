@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
-from loader import db, links, bot, notify_lectures, notify, display, subjects
+from aiogram.types import ReplyKeyboardMarkup
+from loader import db, links, bot, notify_lectures, notify, display, subjects, ADMINS
 from aiogram.utils import exceptions
 from aiogram.utils.markdown import hlink
 from utils.utilities import datetime_now, additionalDebug, datePrint, type_optimize
@@ -79,7 +80,7 @@ async def notify_process(wait_for):
 
 async def sendNotify(user, group, text):
     try:
-        await bot.send_message(user, text, parse_mode="HTML", disable_web_page_preview=True)
+        await bot.send_message(user, text, parse_mode="HTML", disable_web_page_preview=True, reply_markup=menu_buttons(user))
         datePrint(f'Уведомление {group} отправлено в чат {user}')
     except exceptions.ChatNotFound:
         datePrint(f'Чат {user} не найден. Уведомление не отправлено')
@@ -99,3 +100,14 @@ async def sendNotify(user, group, text):
     except Exception as e:
         datePrint(f'Неизвестная ошибка {e.args[0]}')
         await bot.send_message(728227124, f'🚨 Unknown Error 🚨\n\nПользователь: {user}\n\n{e.args[0]}')
+
+
+def menu_buttons(user_id):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add('Пари на сьогодні').insert('Пари на завтра').insert('Пари на тиждень')
+    markup.add('Обрати дату')
+    markup.add('Розклад викладача')
+    markup.add('⚙️ Налаштування')
+    if user_id in ADMINS:
+        markup.insert('⚙️ Админка')
+    return markup

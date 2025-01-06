@@ -269,7 +269,7 @@ async def groups_info(message: types.Message):
     else:
         await message.answer('В БД пусто 🫤')
 
-@dp.message_handler(text='Обновитть преподов', state=AdminSettings.SettingsMenu)
+@dp.message_handler(text='Обновить преподов', state=AdminSettings.SettingsMenu)
 async def update_all_teachers(message: types.Message):
     await message.answer('Parsing...')
     teachers_list = make_unique(parse_all_teachers())
