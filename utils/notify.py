@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 from aiogram.types import ReplyKeyboardMarkup
-from loader import db, links, bot, notify_lectures, notify, display, subjects, ADMINS
+from loader import db, links, bot, notify_lectures, notify, display, subjects, ADMINS, marks
 from aiogram.utils import exceptions
 from aiogram.utils.markdown import hlink
 from utils.utilities import datetime_now, additionalDebug, datePrint, type_optimize
@@ -34,16 +34,17 @@ async def notify_process(wait_for):
                     notify_lectures[group].pop(0)
                 elif left_time <= timedelta(minutes=5):
                     group_userlist = db.get_users_in_group(group)
-                    print(f"group_list:")
+                    # print(f"group_list:")
                     for userlist in group_userlist:
                         send = False
 
                         notify_message_header_list = []
                         notify_message_types_list = []
                         notify_message_links = ""
+                        marklinks = ""
 
                         user = userlist[0]
-                        print(user)
+                        # print(user)
 
                         for lecture_info in lectures_list:
                             lecture_name = lecture_info[0]
@@ -51,26 +52,34 @@ async def notify_process(wait_for):
                             if not notify.notify_exist(user, group, lecture_name):
                                 notify.add_notify(user, group, lecture_name, db.get_notify_status(user))
                             if notify.get_notify(user, group, lecture_name):
-                                print(f"user {user} has notify for {lecture_name}")
+                                # print(f"user {user} has notify for {lecture_name}")
                                 if not display.display_exist(user, group):
                                     current_subj_arr_line = subjects.get_subjects(group)
                                     current_subj_arr = current_subj_arr_line.split(',')
                                     line = ",".join(current_subj_arr)
                                     display.set_display(user, group, line)
                                 if display.has_display(user, group, lecture_name):
-                                    print(f"user {user} has display for {lecture_name}")
+                                    # print(f"user {user} has display for {lecture_name}")
                                     send = True
-                                    print(f"send = {send}\n\n")
+                                    # print(f"send = {send}\n\n")
                                     notify_message_header_list.append(f"<b>{lecture_name}</b>")
                                     notify_message_types_list.append([lecture_name, lecture_type])
+                                    placeholder = lecture_name
+                                    if len(lectures_list) == 1:
+                                        placeholder = 'тик'
                                     if links.link_exist(user, group, lecture_name, lecture_type):
-                                        notify_message_links = notify_message_links + f"{hlink(lecture_name, links.get_link(user, group, lecture_name, lecture_type))} "
+                                        notify_message_links = notify_message_links + f"{hlink(placeholder, links.get_link(user, group, lecture_name, lecture_type))} "
+                                    if marks.marklink_exist(group, lecture_name, lecture_type):
+                                        marklinks = marklinks + f"{hlink(placeholder, marks.get_marklink(group, lecture_name, lecture_type))} "
                         if send:
                             notify_message_header = ", ".join(notify_message_header_list)
                             types = type_optimize(notify_message_types_list)
                             if len(notify_message_links) < 1:
                                 notify_message_links = "Не додано"
-                            await sendNotify(user, group,f'🔔 <b>{notify_message_header}</b> через <b>5</b> хвилин! 🔔\n\n⏰ Час: {lecture.startTime()} - {lecture.endTime()}\n📖 Тип: {types}\n🔗 Посилання: {notify_message_links}')
+                            marklinks_line = ""
+                            if len(marklinks) > 0:
+                                marklinks_line = f"\n📌 Відмітитись: {marklinks}\n"
+                            await sendNotify(user, group,f'🔔 <b>{notify_message_header}</b> через <b>5</b> хвилин! 🔔\n\n⏰ Час: {lecture.startTime()} - {lecture.endTime()}\n📖 Тип: {types}\n🔗 Посилання: {notify_message_links}{marklinks_line}')
                     notify_lectures[group].pop(0)
 
         try:
