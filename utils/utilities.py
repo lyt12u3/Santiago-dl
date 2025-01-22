@@ -3,7 +3,7 @@ from tzlocal import get_localzone
 from datetime import datetime, timedelta
 from data import config
 from . import parser
-from loader import week_lectures, db, links, additional_debug, subjects, display
+from loader import week_lectures, db, links, additional_debug, subjects, display, marks
 from aiogram.utils.markdown import hlink
 
 
@@ -232,6 +232,34 @@ def get_links(user_id, text = True):
                 current_links += f"📚 {escapeMarkdown(el)}: Не додано\n"
     return current_links
 
+def get_marklinks(user_id, text = True):
+    group = db.get_group(user_id)
+    if subjects.subjects_exist(group):
+        current_links_arr_line = subjects.get_subjects(group)
+        current_links_arr = current_links_arr_line.split(',')
+    else:
+        current_links_arr = parser.parseSubjects(group)
+        subjects.set_subjects(group, current_links_arr)
+    current_links = ""
+    if text:
+        current_links = f"🔗 Відмітки для {escapeMarkdown(group)}:\n\n"
+    for el in current_links_arr:
+        if marks.any_marklink_exist(group, el):
+            links_types = ""
+            if marks.marklink_exist(group, el, 'Лк'):
+                lk_link = f'{marks.get_marklink(group, el, "Лк")}'
+                links_types += f"[Лк]({escapeMarkdown(lk_link)}) "
+            if marks.marklink_exist(group, el, 'Пз'):
+                pz_link = f'{marks.get_marklink(group, el, "Пз")}'
+                links_types += f"[Пз]({escapeMarkdown(pz_link)}) "
+            if marks.marklink_exist(group, el, 'Лб'):
+                lb_link = f'{marks.get_marklink(group, el, "Лб")}'
+                links_types += f"[Лб]({escapeMarkdown(lb_link)}) "
+            current_links += f"📚 {escapeMarkdown(el)}: {links_types}\n"
+        else:
+            if text:
+                current_links += f"📚 {escapeMarkdown(el)}: Не додано\n"
+    return current_links
 
 def format_teachers_schedule(schedule, teacher_name):
     day, month, year = formatDate(datetime_now())

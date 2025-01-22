@@ -3,13 +3,126 @@ from datetime import timedelta
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from keyboards import admin_settings_buttons, menu_buttons, delete_group_buttons, users_list_buttons, editor_types_markup, editor_choose_markup, reply_editor_subjects, editor_automate, editor_finish
-from loader import dp, db, groups, bot, week_lectures, notify_lectures, all_teachers
+from keyboards import admin_settings_buttons, menu_buttons, delete_group_buttons, users_list_buttons, editor_types_markup, editor_choose_markup, reply_editor_subjects, editor_automate, editor_finish, marklinks_buttons, subjects_buttons_marks, \
+    links_types_delete, links_types, marklinks_types_delete, marklinks_types, cancel_buttons
+from loader import dp, db, groups, bot, week_lectures, notify_lectures, all_teachers, subjects, marks
 from states import AdminSettings
 from utils import parser, Lecture
 from utils.parser import parse_all_teachers
 from utils.updater import update_lectures_process
-from utils.utilities import formatDate, datetime_now, escapeMarkdown, formatWeekday, formatChar, make_unique
+from utils.utilities import formatDate, datetime_now, escapeMarkdown, formatWeekday, formatChar, make_unique, get_marklinks
+
+
+#############################  EXPERIMENTAL BLOCK OF CODE  ######################
+
+
+@dp.message_handler(text="Отметки", state=AdminSettings.SettingsMenu)
+async def link_settings(message: types.Message):
+    user_id = message.from_user.id
+    group = db.get_group(user_id)
+    current_links = get_marklinks(user_id)
+    await message.answer(current_links, parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=marklinks_buttons)
+
+@dp.callback_query_handler(lambda call: call.data in ['add_marklink', 'delete_marklink'], state=AdminSettings.SettingsMenu)
+async def callback_add_link1(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    current_links = get_marklinks(user_id)
+    await callback.message.edit_text(current_links, parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=subjects_buttons_marks(callback))
+
+@dp.callback_query_handler(text="marklink_cancel", state=AdminSettings.SettingsMenu)
+async def callback_link_settings_cancel(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    current_links = get_marklinks(user_id)
+    await callback.message.edit_text(current_links, parse_mode="MarkdownV2", reply_markup=marklinks_buttons, disable_web_page_preview=True)
+
+@dp.callback_query_handler(lambda call: re.match(r'mark_delete_.+', call.data), state=AdminSettings.SettingsMenu)
+async def callback_type(callback: types.CallbackQuery):
+    subject = callback.data[12:]
+    await callback.message.edit_text(f'📚 Виберіть тип посилання для видалення {subject}', reply_markup=marklinks_types_delete)
+    subj_del_data[callback.from_user.id] = {}
+    subj_del_data[callback.from_user.id]["Subject"] = subject
+
+@dp.callback_query_handler(lambda call: call.data in ['lk_del_mark','pz_del_mark','lb_del_mark'], state=AdminSettings.SettingsMenu)
+async def callback_links(callback: types.CallbackQuery):
+    if callback.data[:2] == "lk":
+        type = "Лк"
+    elif callback.data[:2] == "pz":
+        type = "Пз"
+    elif callback.data[:2] == "lb":
+        type = "Лб"
+    subj_del_data_local = subj_del_data.get(callback.from_user.id)
+    subject = subj_del_data_local.get("Subject")
+    group = db.get_group(callback.from_user.id)
+    if subjects.subjects_exist(group):
+        current_links_arr_line = subjects.get_subjects(group)
+        current_links_arr = current_links_arr_line.split(',')
+    else:
+        current_links_arr = parser.parseSubjects(group)
+        subjects.set_subjects(group, current_links_arr)
+    if subject in current_links_arr:
+        marks.delete_marklink(group, subject, type)
+        await callback.message.answer("Посилання видалено", reply_markup=admin_settings_buttons)
+        current_links = get_marklinks(callback.from_user.id)
+        await callback.message.answer(current_links, parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=marklinks_buttons)
+
+subj_data = {}
+subj_del_data = {}
+
+@dp.callback_query_handler(lambda call: re.match(r'mark_add_.+', call.data), state=AdminSettings.SettingsMenu)
+async def callback_type(callback: types.CallbackQuery):
+    subject = callback.data[9:]
+    # await bot.send_message(callback.from_user.id, f'📚 Виберіть тип посилання для {subject}', reply_markup=links_types)
+    await callback.message.edit_text(f'📚 Виберіть тип посилання для {subject}',reply_markup=marklinks_types)
+    subj_data[callback.from_user.id] = {}
+    subj_data[callback.from_user.id]["Subject"] = subject
+
+@dp.callback_query_handler(lambda call: call.data in ['lk_add_mark','pz_add_mark','lb_add_mark'], state=AdminSettings.SettingsMenu)
+async def callback_links(callback: types.CallbackQuery):
+    if callback.data[:2] == "lk":
+        type = "Лк"
+    elif callback.data[:2] == "pz":
+        type = "Пз"
+    elif callback.data[:2] == "lb":
+        type = "Лб"
+    subj_data_local = subj_data.get(callback.from_user.id)
+    subject = subj_data_local.get("Subject")
+    subj_data[callback.from_user.id]["Type"] = type
+    group = db.get_group(callback.from_user.id)
+    if subjects.subjects_exist(group):
+        current_links_arr_line = subjects.get_subjects(group)
+        current_links_arr = current_links_arr_line.split(',')
+    else:
+        current_links_arr = parser.parseSubjects(group)
+        subjects.set_subjects(group, current_links_arr)
+    if subject in current_links_arr:
+        line = escapeMarkdown(f"Введіть посилання на відвідування для {subject} {type}\n\nПриклад: https://dl.nure.ua/mod/attendance/view.php?id=687645")
+        await bot.send_message(callback.from_user.id, f"{line}\n\nЩоб скасувати введення посилання, напишіть *Скасувати*", parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=cancel_buttons)
+        await AdminSettings.LinkAdd.set()
+
+@dp.message_handler(lambda message: message.text == "Скасувати", state=AdminSettings.LinkAdd)
+async def links_settings_cancel(message: types.Message, state: FSMContext):
+    await AdminSettings.SettingsMenu.set()
+    await message.answer("Введення посилання скасовано", reply_markup=admin_settings_buttons)
+
+@dp.message_handler(state=AdminSettings.LinkAdd)
+async def links_settings_link_wait(message: types.Message, state: FSMContext):
+    link = message.text
+    user_id = message.from_user.id
+    group = db.get_group(user_id)
+    subj_data_local = subj_data.get(user_id)
+    subject = subj_data_local.get("Subject")
+    type = subj_data_local.get("Type")
+    if (not marks.marklink_exist(group, subject, type)):
+        marks.add_marklink(group, subject, type, link)
+    else:
+        marks.update_marklink(group, subject, type, link)
+    await message.answer(f"Посилання для {subject} {type} встановлене!", reply_markup=admin_settings_buttons)
+    current_links = get_marklinks(user_id)
+    await message.answer(current_links, parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=marklinks_buttons)
+    await AdminSettings.SettingsMenu.set()
+
+
+#################################################################################
 
 
 @dp.message_handler(text='⬅️ Назад', state=AdminSettings.SettingsMenu)

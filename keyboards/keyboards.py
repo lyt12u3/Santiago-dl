@@ -60,6 +60,26 @@ def subjects_buttons(callback):
 
     return markup
 
+def subjects_buttons_marks(callback):
+    user_id = callback.from_user.id
+    group = db.get_group(user_id)
+    if subjects.subjects_exist(group):
+        current_links_arr_line = subjects.get_subjects(group)
+        current_links_arr = current_links_arr_line.split(',')
+    else:
+        current_links_arr = parser.parseSubjects(group)
+        subjects.set_subjects(group, current_links_arr)
+
+    markup = InlineKeyboardMarkup(row_width=3)
+    for el in current_links_arr:
+        if callback.data == "add_marklink":
+            markup.insert(InlineKeyboardButton(text=f"📚 {el}", callback_data=f"mark_add_{el}"))
+        else:
+            markup.insert(InlineKeyboardButton(text=f"📚 {el}", callback_data=f"mark_delete_{el}"))
+    markup.add(InlineKeyboardButton(text="❌ Назад", callback_data="marklink_cancel"))
+
+    return markup
+
 def notify_buttons(user_id, group):
     if subjects.subjects_exist(group):
         current_subj_arr_line = subjects.get_subjects(group)
@@ -122,6 +142,10 @@ links_buttons = InlineKeyboardMarkup(row_width=2)
 links_buttons.add(InlineKeyboardButton(text="Додати/змінити", callback_data="add_link"))
 links_buttons.insert(InlineKeyboardButton(text="Видалити посилання", callback_data="delete_link"))
 
+marklinks_buttons = InlineKeyboardMarkup(row_width=2)
+marklinks_buttons.add(InlineKeyboardButton(text="Додати/змінити", callback_data="add_marklink"))
+marklinks_buttons.insert(InlineKeyboardButton(text="Видалити посилання", callback_data="delete_marklink"))
+
 links_types = InlineKeyboardMarkup(row_width=3)
 links_types.add(InlineKeyboardButton(text='📖 Лк', callback_data="lk_add"))
 links_types.insert(InlineKeyboardButton(text='📖 Пз', callback_data="pz_add"))
@@ -134,11 +158,24 @@ links_types_delete.insert(InlineKeyboardButton(text='📖 Пз', callback_data="
 links_types_delete.insert(InlineKeyboardButton(text='📖 Лб', callback_data="lb_del"))
 links_types_delete.add(InlineKeyboardButton(text="❌ Назад", callback_data="link_cancel"))
 
+marklinks_types = InlineKeyboardMarkup(row_width=3)
+marklinks_types.add(InlineKeyboardButton(text='📖 Лк', callback_data="lk_add_mark"))
+marklinks_types.insert(InlineKeyboardButton(text='📖 Пз', callback_data="pz_add_mark"))
+marklinks_types.insert(InlineKeyboardButton(text='📖 Лб', callback_data="lb_add_mark"))
+marklinks_types.add(InlineKeyboardButton(text="❌ Назад", callback_data="marklink_cancel"))
+
+marklinks_types_delete = InlineKeyboardMarkup(row_width=3)
+marklinks_types_delete.add(InlineKeyboardButton(text='📖 Лк', callback_data="lk_del_mark"))
+marklinks_types_delete.insert(InlineKeyboardButton(text='📖 Пз', callback_data="pz_del_mark"))
+marklinks_types_delete.insert(InlineKeyboardButton(text='📖 Лб', callback_data="lb_del_mark"))
+marklinks_types_delete.add(InlineKeyboardButton(text="❌ Назад", callback_data="marklink_cancel"))
+
 admin_settings_buttons = ReplyKeyboardMarkup(resize_keyboard=True, input_field_placeholder="Действие")
 admin_settings_buttons.add('Обновить базу всех групп')
 admin_settings_buttons.insert('Обновление')
 admin_settings_buttons.add('Вывести БД')
-admin_settings_buttons.add('Изменить подписку')
+admin_settings_buttons.add('Отметки')
+# admin_settings_buttons.add('Изменить подписку')
 admin_settings_buttons.add('Удалить пользователя')
 admin_settings_buttons.insert('Удалить группу')
 admin_settings_buttons.add('Создать пару')

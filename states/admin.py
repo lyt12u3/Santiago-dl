@@ -13,6 +13,8 @@ class AdminSettings(StatesGroup):
     CreateLecture_AddOrContinue = State()
     CreateLecture_Time = State()
     CreateLecture_Finish = State()
+    LinkAdd = State()
+    LinkTypeSelect = State()
 
 class AdminPrikoli(StatesGroup):
     MessageWait = State()

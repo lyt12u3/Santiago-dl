@@ -21,3 +21,7 @@ from .keyboards import reply_editor_subjects
 from .keyboards import group_users
 from .keyboards import recieve_interface
 from .keyboards import select_teachers
+from .keyboards import marklinks_buttons
+from .keyboards import subjects_buttons_marks
+from .keyboards import marklinks_types
+from .keyboards import marklinks_types_delete

@@ -7,3 +7,4 @@ from .database import Teachers
 from .database import AllTeachers
 from .database import Notify
 from .database import Display
+from .database import Marks
