@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup as BS
 from loader import groups, groups_list, week_lectures, notify_lectures
 from utils.utilities import datetime_now, debug
 
-
 def parseApiGroups():
     print("[Updating all groups] Sending request")
     r = requests.get("https://nure-dev.pp.ua/api/groups")
@@ -15,7 +14,47 @@ def parseApiGroups():
         groups_list.add_group(group['name'], group['id'])
 
 
+def parse_faculties():
+    faculties = []
+    try:
+        r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:371574995017904::NO:::#")
+        html = BS(r.content.decode('windows-1251'), 'lxml')
+        div = html.find("div", id="GROUPS_AJAX")
+        table = div.find_all("table", class_="htmldbTabbedNavigationList")
+        result_a = table[0].find_all("a")
+        for el in result_a:
+            try:
+                name = el.text
+                onclick = el.get('onclick')
+                number = re.search('\((\d+)\)', onclick)
+                faculties.append([name, number.group(1)])
+            except Exception as e:
+                print(f"Error during processing faculties: {e}")
+    except requests.RequestException as e:
+        print(f"Error during request faculties: {e}")
+    except Exception as e:
+        print(f"Error parsing faculties: {e}")
+    return faculties
+
+
 def parseGroup():
+    faculties = parse_faculties()
+    groups_list.truncate()
+    for fac in faculties:
+        print(f"Processing faculty: {fac[0]}")
+        r = requests.get(f"https://cist.nure.ua/ias/app/tt/WEB_IAS_TT_AJX_GROUPS?p_id_fac={fac[1]}")
+        html = BS(r.content, 'lxml')
+        # result = html.find("div", id="GROUPS_AJAX")
+        groups_data_lines = html.find_all("a", style="white-space:nowrap;")
+        for group_line in groups_data_lines:
+            match = re.search(r"\('(.+)',(.+)\)", group_line.get("onclick"))
+            group = match.group(1)
+            code = match.group(2)
+            print(f"{group} - {code}")
+            groups_list.add_group(group, code)
+
+
+def parseGroup_old():
     r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:2677400761397891::NO#")
     html = BS(r.content, 'lxml')
     result = html.find("div", id="GROUPS_AJAX")
@@ -134,17 +173,26 @@ def parseWeek(day1, month1, year1, day2, month2, year2, group="КНТ-22-4"):
     return parsed_week
 
 
-def parseSubjects(group="КНТ-22-4"):
+def get_semester_dates():
     try:
-        # all_groups = Groups("database.db")
+        r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:371574995017904::NO:::#")
+        html = BS(r.content, 'lxml')
+        datepickers = html.find_all('td', class_='datepicker')
+        start_date = datepickers[0].find_all('input')[1].get('value')
+        end_date = datepickers[1].find_all('input')[1].get('value')
+        return start_date, end_date
+    except Exception as e:
+        print(f"Error getting semester dates: {e.args[0]}")
+
+
+def parseSubjects(group="КНТ-22-4", start_date=None, end_date=None):
+    try:
+        if not start_date and not end_date:
+            debug("Subjects updating: parsing start and end dates...")
+            start_date, end_date = get_semester_dates()
+            debug("Subjects updating: parsing subjects...")
         group_code = groups.get_code(group)
-        r = requests.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:527954707314034:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:10.02.2025,30.06.2025,{group_code},0:")
-        # if group == "КНТ-22-4":
-        #     r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:201:622623529402425:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:01.09.2023,31.01.2024,10306577,0:")
-        # elif group == "ВПВПС-22-3":
-        #     r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:201:3627512681037055:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:01.09.2023,31.01.2024,10284323,0:")
-        # elif group == "ІТУ-22-1":
-        #     r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:201:4698868271516682:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:01.09.2023,31.01.2024,10306589,0:")
+        r = requests.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:527954707314034:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{start_date},{end_date},{group_code},0:")
         html = BS(r.content, 'lxml')
 
         subjects_names_table = html.find("table", class_="footer").find_all("td", class_="name")
@@ -155,7 +203,6 @@ def parseSubjects(group="КНТ-22-4"):
         return result_subjects
     except Exception as e:
         print(f"Error {group}: {e.args[0]}")
-
 
 def parseDay(day, month, year, group="КНТ-22-4"):
     # all_groups = Groups("database.db")
@@ -196,6 +243,7 @@ def parseDay(day, month, year, group="КНТ-22-4"):
         # print(f"{pari[i].index} пара: {pari[i].name}\n{pari[i].type}\nПочаток: {pari[i].start_hours}:{pari[i].start_minutes}\nКінець: {pari[i].end_hours}:{pari[i].end_minutes}\n")
 
     return lectures
+
 
 def parse_kafedras():
     kafedras = []
