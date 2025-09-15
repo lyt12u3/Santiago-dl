@@ -4,7 +4,7 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from keyboards import settings_buttons, choose_group_buttons, cancel_buttons, menu_buttons, links_buttons, \
     subjects_buttons, links_types, links_types_delete, notify_buttons, display_buttons, group_users, recieve_interface
-from loader import dp, db, groups_list, groups, week_lectures, notify_lectures, subjects, links, bot, notify, display
+from loader import dp, db, groups_list, groups, week_lectures, notify_lectures, subjects, links, bot, notify, display, display_new
 from states import Settings
 from utils.utilities import debug, datetime_now, formatDate, get_links, escapeMarkdown, datePrint
 from utils import parser
@@ -46,7 +46,7 @@ async def callback_change(callback: types.CallbackQuery):
     subject = callback.data.replace("display_change_","")
     user_id = callback.from_user.id
     group = db.get_group(user_id)
-    display.update_display(user_id, group, subject)
+    display_new.update_display(user_id, group, subject)
     await callback.message.edit_text("🔔 Тут ви можете змінити налаштування відображення предметів в розкладі 😀", parse_mode="MarkdownV2", reply_markup=display_buttons(user_id, group))
 
 # @dp.message_handler(text="Вимкнути повідомлення")
@@ -139,14 +139,17 @@ async def callback_type(callback: types.CallbackQuery):
     subj_del_data[callback.from_user.id] = {}
     subj_del_data[callback.from_user.id]["Subject"] = subject
 
-@dp.callback_query_handler(lambda call: call.data in ['lk_del','pz_del','lb_del'])
+@dp.callback_query_handler(lambda call: call.data in ['lk_del','pz_del','lb_del','all_del'])
 async def callback_links(callback: types.CallbackQuery):
-    if callback.data[:2] == "lk":
+    type_raw = callback.data.replace("_del", "")
+    if type_raw == "lk":
         type = "Лк"
-    elif callback.data[:2] == "pz":
+    elif type_raw == "pz":
         type = "Пз"
-    elif callback.data[:2] == "lb":
+    elif type_raw == "lb":
         type = "Лб"
+    elif type_raw == "all":
+        type = "All"
     subj_del_data_local = subj_del_data.get(callback.from_user.id)
     subject = subj_del_data_local.get("Subject")
     group = db.get_group(callback.from_user.id)
@@ -157,7 +160,12 @@ async def callback_links(callback: types.CallbackQuery):
         current_links_arr = parser.parseSubjects(group)
         subjects.set_subjects(group, current_links_arr)
     if subject in current_links_arr:
-        links.delete_link(callback.from_user.id, group, subject, type)
+        if type == "All":
+            links.delete_link(callback.from_user.id, group, subject, "Лк")
+            links.delete_link(callback.from_user.id, group, subject, "Пз")
+            links.delete_link(callback.from_user.id, group, subject, "Лб")
+        else:
+            links.delete_link(callback.from_user.id, group, subject, type)
         await callback.message.answer("Посилання видалено", reply_markup=settings_buttons(callback.from_user.id))
         current_links = get_links(callback.from_user.id)
         await callback.message.answer(current_links, parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=links_buttons)
@@ -174,14 +182,17 @@ async def callback_type(callback: types.CallbackQuery):
     subj_data[callback.from_user.id] = {}
     subj_data[callback.from_user.id]["Subject"] = subject
 
-@dp.callback_query_handler(lambda call: call.data in ['lk_add','pz_add','lb_add'])
+@dp.callback_query_handler(lambda call: call.data in ['lk_add','pz_add','lb_add','all_add'])
 async def callback_links(callback: types.CallbackQuery):
-    if callback.data[:2] == "lk":
+    type_raw = callback.data.replace("_add", "")
+    if type_raw == "lk":
         type = "Лк"
-    elif callback.data[:2] == "pz":
+    elif type_raw == "pz":
         type = "Пз"
-    elif callback.data[:2] == "lb":
+    elif type_raw == "lb":
         type = "Лб"
+    elif type_raw == "all":
+        type = "All"
     subj_data_local = subj_data.get(callback.from_user.id)
     subject = subj_data_local.get("Subject")
     subj_data[callback.from_user.id]["Type"] = type
@@ -193,7 +204,10 @@ async def callback_links(callback: types.CallbackQuery):
         current_links_arr = parser.parseSubjects(group)
         subjects.set_subjects(group, current_links_arr)
     if subject in current_links_arr:
-        line = escapeMarkdown(f"Введіть посилання для {subject} {type}\n\nПриклад: https://meet.google.com/yjg-qgwj-bwh")
+        if type == "All":
+            line = escapeMarkdown(f"Введіть посилання для {subject}\n\nПриклад: https://meet.google.com/yjg-qgwj-bwh")
+        else:
+            line = escapeMarkdown(f"Введіть посилання для {subject} {type}\n\nПриклад: https://meet.google.com/yjg-qgwj-bwh")
         await bot.send_message(callback.from_user.id, f"{line}\n\nЩоб скасувати введення посилання, напишіть *Скасувати*", parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=cancel_buttons)
         await Settings.LinkAdd.set()
 
@@ -214,11 +228,19 @@ async def links_settings_link_wait(message: types.Message, state: FSMContext):
     subj_data_local = subj_data.get(user_id)
     subject = subj_data_local.get("Subject")
     type = subj_data_local.get("Type")
-    if (not links.link_exist(user_id, group, subject, type)):
-        links.add_link(user_id, group, subject, type, link)
+    if type == "All":
+        for new_type in ["Лк","Пз","Лб"]:
+            if (not links.link_exist(user_id, group, subject, new_type)):
+                links.add_link(user_id, group, subject, new_type, link)
+            else:
+                links.update_link(user_id, group, subject, new_type, link)
+        await message.answer(f"Посилання для {subject} встановлені!", reply_markup=settings_buttons(user_id))
     else:
-        links.update_link(user_id, group, subject, type, link)
-    await message.answer(f"Посилання для {subject} {type} встановлене!", reply_markup=settings_buttons(user_id))
+        if (not links.link_exist(user_id, group, subject, type)):
+            links.add_link(user_id, group, subject, type, link)
+        else:
+            links.update_link(user_id, group, subject, type, link)
+        await message.answer(f"Посилання для {subject} {type} встановлене!", reply_markup=settings_buttons(user_id))
     current_links = get_links(user_id)
     await message.answer(current_links, parse_mode="MarkdownV2", disable_web_page_preview=True, reply_markup=links_buttons)
     await state.finish()

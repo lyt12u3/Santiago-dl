@@ -1,15 +1,15 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from data import config
-from loader import groups, db, subjects, notify, display, ADMINS, bot
+from loader import groups, db, subjects, notify, display, display_new, ADMINS, bot
 from utils import parser
 from utils.utilities import getMonth
 
 
 def menu_buttons(user_id):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add('Пари на сьогодні').insert('Пари на завтра').insert('Пари на тиждень')
-    markup.add('Обрати дату')
-    markup.add('Розклад викладача')
+    markup.add('📅 Пари на сьогодні').insert('🗓️ Пари на завтра').insert('📆 Пари на тиждень')
+    markup.add('📍 Обрати дату')
+    markup.add('👨‍🏫 Розклад викладача')
     markup.add('⚙️ Налаштування')
     if user_id in ADMINS:
         markup.insert('⚙️ Админка')
@@ -113,10 +113,9 @@ def display_buttons(user_id, group):
     markup = InlineKeyboardMarkup(row_width=3)
     for subj in current_subj_arr:
         emojis = {0: "❌", 1: "✅"}
-        if not display.display_exist(user_id, group):
-            line = ",".join(current_subj_arr)
-            display.set_display(user_id, group, line)
-        emoji = emojis[display.has_display(user_id, group, subj)]
+        if not display_new.display_exist(user_id, group, subj):
+            display_new.add_display(user_id, group, subj)
+        emoji = emojis[display_new.has_positive_display(user_id, group, subj)]
         markup.insert(InlineKeyboardButton(text=f"{subj} {emoji}", callback_data=f"display_change_{subj}"))
 
     return markup
@@ -150,12 +149,14 @@ links_types = InlineKeyboardMarkup(row_width=3)
 links_types.add(InlineKeyboardButton(text='📖 Лк', callback_data="lk_add"))
 links_types.insert(InlineKeyboardButton(text='📖 Пз', callback_data="pz_add"))
 links_types.insert(InlineKeyboardButton(text='📖 Лб', callback_data="lb_add"))
+links_types.add(InlineKeyboardButton(text='📖 Додати на всі типи', callback_data="all_add"))
 links_types.add(InlineKeyboardButton(text="❌ Назад", callback_data="link_cancel"))
 
 links_types_delete = InlineKeyboardMarkup(row_width=3)
 links_types_delete.add(InlineKeyboardButton(text='📖 Лк', callback_data="lk_del"))
 links_types_delete.insert(InlineKeyboardButton(text='📖 Пз', callback_data="pz_del"))
 links_types_delete.insert(InlineKeyboardButton(text='📖 Лб', callback_data="lb_del"))
+links_types_delete.add(InlineKeyboardButton(text='📖 Видалити зі всіх типів', callback_data="all_del"))
 links_types_delete.add(InlineKeyboardButton(text="❌ Назад", callback_data="link_cancel"))
 
 marklinks_types = InlineKeyboardMarkup(row_width=3)
