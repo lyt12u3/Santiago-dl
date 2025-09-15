@@ -6,7 +6,7 @@ from aiogram.dispatcher import FSMContext
 
 from data import config
 from keyboards import menu_buttons, month_buttons, another_day_buttons, settings_buttons, admin_settings_buttons, choose_group_buttons, select_teachers, cancel_buttons
-from loader import dp, db, week_lectures, ADMINS, display, display_new, teachers, all_teachers, bot
+from loader import dp, db, week_lectures, ADMINS, display, teachers, all_teachers, bot
 from states import AdminSettings, UserWait
 from utils import parser
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -125,7 +125,7 @@ async def week_forward(callback: types.CallbackQuery):
                 for lecture_info in lecture.info:
                     lecture_name = lecture_info[0]
                     lecture_type = lecture_info[1]
-                    if display_new.has_positive_display(user_id, group, lecture_name):
+                    if display.has_display(user_id, group, lecture_name):
                         lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture_name}</b> {lecture_type}\n"
                         visible_counter += 1
         else:
@@ -163,7 +163,7 @@ async def week_forward(callback: types.CallbackQuery):
                 for lecture_info in lecture.info:
                     lecture_name = lecture_info[0]
                     lecture_type = lecture_info[1]
-                    if display_new.has_positive_display(user_id, group, lecture_name):
+                    if display.has_display(user_id, group, lecture_name):
                         lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture_name}</b> {lecture_type}\n"
                         visible_counter += 1
         else:

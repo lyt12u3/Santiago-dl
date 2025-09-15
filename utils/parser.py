@@ -143,6 +143,18 @@ def parseWeek(day1, month1, year1, day2, month2, year2, group="КНТ-22-4"):
             current_date = date_element.text
             parsed_week[current_date] = [current_day]
         else:
+            # if current_date == "01.10.2024":
+            # if doodoododo:
+            #     pairs_test = [["*СГМтА", "Лк"], ["*ФJS", "Пз"], ["ПВСЗД", "Лк"], ["ФВ", "Пз"]]
+            #     # pairs_test = [["*СГМтА", "Лк"]]
+            #     current_time = datetime_now()
+            #     minute = current_time.time().minute + 6
+            #     hour = current_time.time().hour
+            #     parsed_week["01.10.2024"].append(Lecture("1", pairs_test, "Лк", str(hour), str(minute), "20", "00"))
+            #     # parsed_week["30.09.2024"].append(Lecture("1", pairs_test, "Лк", "20", "20", "21", "00"))
+            #     # parsed_week["01.10.2024"].append(Lecture("2", [["*ФJS", "Лк"]], "Лк", "22", "20", "23", "00"))
+            #
+            #     doodoododo = False
             pair_number = row.find('td', class_='left').text
             pair_time = row.find('td', class_='left').find_next_sibling().text
             start = re.search(r'(.+)\s', pair_time).group().replace(" ", "")

@@ -5,33 +5,12 @@ from data import config
 from keyboards import menu_buttons, notify_buttons
 from states import AdminPrikoli
 from utils import parser
-from utils.parser import Lecture, parseSubjects
+from utils.parser import Lecture
 from utils.updater import update_lectures_process
-from loader import dp, bot, db, links, notify, week_lectures, notify_lectures, subjects, display, display_new, ADMINS
+from loader import dp, bot, db, links, notify, week_lectures, notify_lectures, subjects, display, ADMINS
 from utils.utilities import datetime_now, formatDate, datePrint
 import re
 from aiogram.utils.markdown import hlink
-
-
-@dp.message_handler(commands="migrate_display")
-async def migrate_display(message: types.Message):
-    if message.from_user.id in ADMINS:
-        users_list = db.read_all()
-        for user in users_list:
-            user_id = user[1]
-            group = user[2]
-            current_display = display.get_display(user_id, group).split(',')
-            actual_subjects = parseSubjects(group)
-            display_new.clear()
-            for subject in actual_subjects:
-                if subject in current_display:
-                    print(subject, "1")
-                    display_new.add_display(user_id, group, subject)
-                else:
-                    print(subject, "0")
-                    display_new.add_display(user_id, group, subject, 0)
-        await message.answer("Данные перенесены в новую таблицу")
-
 
 @dp.message_handler(commands=['delete_user'])
 async def command_send_to_igor(message: types.Message):
@@ -45,7 +24,6 @@ async def command_send_to_igor(message: types.Message):
             notify.delete_all_notify(del_id)
             print(f"[notify] Удален пользователь {del_id}")
             display.delete_user(del_id)
-            display_new.delete_user(del_id)
             print(f"[display] Удален пользователь {del_id}")
             await message.answer(f"Пользователь {del_id} удален из users, links, notify, display")
 

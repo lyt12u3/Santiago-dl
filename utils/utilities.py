@@ -3,7 +3,7 @@ from tzlocal import get_localzone
 from datetime import datetime, timedelta
 from data import config
 from . import parser
-from loader import week_lectures, db, links, additional_debug, subjects, display, display_new, marks
+from loader import week_lectures, db, links, additional_debug, subjects, display, marks
 from aiogram.utils.markdown import hlink
 
 
@@ -62,9 +62,9 @@ def format_lectures(day, month, year, user_id, week_lectures_list):
     else:
         current_subj_arr = parser.parseSubjects(group)
         subjects.set_subjects(group, current_subj_arr)
-    if not display_new.user_exist(user_id, group):
-        for subj in current_subj_arr:
-            display_new.add_display(user_id, group, subj)
+    if not display.display_exist(user_id, group):
+        line = ",".join(current_subj_arr)
+        display.set_display(user_id, group, line)
 
     hidden_counter = 0
     visible_counter = 0
@@ -81,9 +81,7 @@ def format_lectures(day, month, year, user_id, week_lectures_list):
             for lecture in lectures_info_list:
                 lecture_name = lecture[0]
                 lecture_type = lecture[1]
-                if not display_new.display_exist(user_id, group, lecture_name):
-                    display_new.add_display(user_id, group, lecture_name)
-                if display_new.has_positive_display(user_id, group, lecture_name):
+                if display.has_display(user_id, group, lecture_name):
                     if count:
                         visible_counter += 1
                         count = False
@@ -103,9 +101,7 @@ def format_lectures(day, month, year, user_id, week_lectures_list):
             lecture_name = lectures_info_list[0][0]
             lecture_type = type_format(lectures_info_list[0][1])
             lecture_non_format_type = lectures_info_list[0][1]
-            if not display_new.display_exist(user_id, group, lecture_name):
-                display_new.add_display(user_id, group, lecture_name)
-            if display_new.has_positive_display(user_id, group, lecture_name):
+            if display.has_display(user_id, group, lecture_name):
                 visible_counter += 1
                 if links.link_exist(user_id, group, lecture_name, lecture_non_format_type):
                     link = hlink("тик", links.get_link(user_id, group, lecture_name, lecture_non_format_type))
@@ -175,9 +171,9 @@ async def format_week(user_id, group):
     else:
         current_subj_arr = parser.parseSubjects(group)
         subjects.set_subjects(group, current_subj_arr)
-    if not display_new.user_exist(user_id, group):
-        for subj in current_subj_arr:
-            display_new.add_display(user_id, group, subj)
+    if not display.display_exist(user_id, group):
+        line = ",".join(current_subj_arr)
+        display.set_display(user_id, group, line)
 
     day, month, year = formatDate(datetime_now())
     date = f"{day}.{month}.{year}"
@@ -194,9 +190,7 @@ async def format_week(user_id, group):
                 for lecture_info in lecture.info:
                     lecture_name = lecture_info[0]
                     lecture_type = lecture_info[1]
-                    if not display_new.display_exist(user_id, group, lecture_name):
-                        display_new.add_display(user_id, group, lecture_name)
-                    if display_new.has_positive_display(user_id, group, lecture_name):
+                    if display.has_display(user_id, group, lecture_name):
                         lectures += f" {lecture.index}️⃣ ⏰ {lecture.startTime()}-{lecture.endTime()} 📚 <b>{lecture_name}</b> {lecture_type}\n"
                         visible_counter += 1
         else:
