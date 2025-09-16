@@ -7,7 +7,7 @@ from states import AdminPrikoli
 from utils import parser
 from utils.parser import Lecture, parseSubjects
 from utils.updater import update_lectures_process
-from loader import dp, bot, db, links, notify, week_lectures, notify_lectures, subjects, display, display_new, ADMINS
+from loader import dp, bot, db, links, notify, week_lectures, notify_lectures, subjects, display, display_new, ADMINS, MASTER_ADMIN
 from utils.utilities import datetime_now, formatDate, datePrint
 import re
 from aiogram.utils.markdown import hlink
@@ -147,7 +147,7 @@ async def command_send_to_igor(message: types.Message):
             print(text)
             await message.answer(text, parse_mode="HTML")
         except exceptions.CantParseEntities as e:
-            await bot.send_message(728227124, f'🚨 Markdown Error 🚨\n\n{e.args[0]}')
+            await bot.send_message(MASTER_ADMIN, f'🚨 Markdown Error 🚨\n\n{e.args[0]}')
 
 @dp.message_handler(commands=['notify_myself'])
 async def command_send_to_igor(message: types.Message):
@@ -157,7 +157,7 @@ async def command_send_to_igor(message: types.Message):
 
 @dp.message_handler(state=AdminPrikoli.NotifyMyselfWait)
 async def send_message_to_igor2(message: types.Message, state: FSMContext):
-    await bot.send_message(728227124, message.text)
+    await bot.send_message(MASTER_ADMIN, message.text)
     await state.finish()
 
 @dp.message_handler(commands=['send_to_igor'])
@@ -188,5 +188,5 @@ async def notify_users(message: types.Message, state: FSMContext):
                 datePrint('Ошибка Bot Blocked')
             except Exception as e:
                 datePrint(f'Неизвестная ошибка {e.args[0]}')
-                await bot.send_message(728227124, f'🚨 Unknown Error 🚨\n\nПользователь: {el[0]}\n\n{e.args[0]}')
+                await bot.send_message(MASTER_ADMIN, f'🚨 Unknown Error 🚨\n\nПользователь: {el[0]}\n\n{e.args[0]}')
     await state.finish()

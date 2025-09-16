@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from keyboards import choose_group_buttons, menu_buttons, cancel_buttons
-from loader import dp, db, groups, groups_list, week_lectures, notify_lectures, bot
+from loader import dp, db, groups, groups_list, week_lectures, notify_lectures, bot, MASTER_ADMIN
 from states import UserWait
 from utils import parser
 from utils.utilities import formatDate, datetime_now, debug
@@ -57,7 +57,7 @@ async def process_add_group(message: types.Message, state: FSMContext):
     await message.answer(f'📆 Дата: {day}.{month}.{year}\n\nВиберіть дію', reply_markup=menu_buttons(message.from_user.id))
     await state.finish()
     debug(f"group {message.text} added by {message.from_user.id} on register")
-    await bot.send_message(728227124, f"📈 Новий користувач: {message.from_user.full_name} [{message.from_user.id}]\n🎓 Група: {message.text}\n\n👥 Всього користувачів: {all_users}")
+    await bot.send_message(MASTER_ADMIN, f"📈 Новий користувач: {message.from_user.full_name} [{message.from_user.id}]\n🎓 Група: {message.text}\n\n👥 Всього користувачів: {all_users}")
 
 @dp.callback_query_handler(text_contains="group:", state=UserWait.nure_group)
 async def process_nure_group(callback: types.CallbackQuery, state: FSMContext):
@@ -71,6 +71,6 @@ async def process_nure_group(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.answer(f'📆 Дата: {day}.{month}.{year}\n\nВиберіть дію', reply_markup=menu_buttons(callback.from_user.id))
         await state.finish()
         debug(f"group {group} selected by {callback.from_user.id} on register")
-        await bot.send_message(728227124, f"📈 Новий користувач: {callback.from_user.full_name} [{callback.from_user.id}]\n🎓 Група: {group}\n\n👥 Всього користувачів: {all_users}")
+        await bot.send_message(MASTER_ADMIN, f"📈 Новий користувач: {callback.from_user.full_name} [{callback.from_user.id}]\n🎓 Група: {group}\n\n👥 Всього користувачів: {all_users}")
     else:
         return await callback.message.answer("Обрана група не підтримується 🫤\nБудь ласка, виберіть групу з представлених")

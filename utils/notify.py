@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 from aiogram.types import ReplyKeyboardMarkup
-from loader import db, links, bot, notify_lectures, notify, display, display_new, subjects, ADMINS, marks
+from loader import db, links, bot, notify_lectures, notify, display, display_new, subjects, ADMINS, MASTER_ADMIN, marks
 from aiogram.utils import exceptions
 from aiogram.utils.markdown import hlink
 from utils.utilities import datetime_now, additionalDebug, datePrint, type_optimize
@@ -90,7 +90,7 @@ async def sendNotify(user, group, text):
         datePrint(f'Уведомление {group} отправлено в чат {user}')
     except exceptions.ChatNotFound:
         datePrint(f'Чат {user} не найден. Уведомление не отправлено')
-        # await bot.send_message(728227124, f'🚨 ChatNotFound 🚨\n\nПользователь: {user}')
+        # await bot.send_message(MASTER_ADMIN, f'🚨 ChatNotFound 🚨\n\nПользователь: {user}')
     except exceptions.CantParseEntities as e:
         datePrint('Ошибка Markdown')
         username = ''
@@ -99,13 +99,13 @@ async def sendNotify(user, group, text):
             username = '@' + us.username
         except Exception as e:
             username = "Unknown"
-        await bot.send_message(728227124, f'🚨 Markdown Error 🚨\n\nПользователь: {user} {username}\n\n{e.args[0]}')
+        await bot.send_message(MASTER_ADMIN, f'🚨 Markdown Error 🚨\n\nПользователь: {user} {username}\n\n{e.args[0]}')
     except exceptions.BotBlocked as e:
         datePrint('Ошибка Bot Blocked')
-        # await bot.send_message(728227124, f'🚨 Bot Blocked 🚨\n\nПользователь: {el[0]}\n\n{e.args[0]}')
+        # await bot.send_message(MASTER_ADMIN, f'🚨 Bot Blocked 🚨\n\nПользователь: {el[0]}\n\n{e.args[0]}')
     except Exception as e:
         datePrint(f'Неизвестная ошибка {e.args[0]}')
-        await bot.send_message(728227124, f'🚨 Unknown Error 🚨\n\nПользователь: {user}\n\n{e.args[0]}')
+        await bot.send_message(MASTER_ADMIN, f'🚨 Unknown Error 🚨\n\nПользователь: {user}\n\n{e.args[0]}')
 
 
 def menu_buttons(user_id):
