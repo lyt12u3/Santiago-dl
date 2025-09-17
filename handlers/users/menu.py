@@ -3,7 +3,7 @@ import re
 from datetime import timedelta
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-
+from aiogram.dispatcher.filters import Text
 from data import config
 from keyboards import menu_buttons, month_buttons, another_day_buttons, settings_buttons, admin_settings_buttons, choose_group_buttons, select_teachers, cancel_buttons
 from loader import dp, db, week_lectures, ADMINS, display, display_new, teachers, all_teachers, bot
@@ -15,7 +15,7 @@ from utils.parser import parse_teacher_week
 from utils.utilities import datetime_now, formatDate, format_lectures, debug, format_week, group_check, format_teachers_schedule
 
 
-@dp.message_handler(text='📅 Пари на сьогодні')
+@dp.message_handler(Text(contains='Пари на сьогодні'))
 async def today(message: types.Message):
     if not group_check(message.from_user.id):
         await UserWait.nure_group.set()
@@ -44,7 +44,7 @@ async def today(message: types.Message):
         await message.answer(f'🚨 Unknown Error 🚨\n\n{e.args[0]}')
     debug(f"today lectures used by {message.from_user.id} from {group}")
 
-@dp.message_handler(text='🗓️ Пари на завтра')
+@dp.message_handler(Text(contains='Пари на завтра'))
 async def tomorrow(message: types.Message):
     if not group_check(message.from_user.id):
         await UserWait.nure_group.set()
@@ -79,7 +79,7 @@ kb.insert(InlineKeyboardButton(text='➡️', callback_data="week_forward"))
 
 current_week = {}
 
-@dp.message_handler(text='📆 Пари на тиждень')
+@dp.message_handler(Text(contains='Пари на тиждень'))
 async def week(message: types.Message):
     if not group_check(message.from_user.id):
         await UserWait.nure_group.set()
@@ -175,7 +175,7 @@ async def week_forward(callback: types.CallbackQuery):
 
     await callback.message.edit_text(lectures, parse_mode="HTML", reply_markup=kb)
 
-@dp.message_handler(text='📍 Обрати дату')
+@dp.message_handler(Text(contains='Обрати дату'))
 async def choose_date(message: types.Message):
     if not group_check(message.from_user.id):
         await UserWait.nure_group.set()
@@ -220,7 +220,7 @@ async def callback_back(callback: types.CallbackQuery):
     day, month, year = formatDate(datetime_now())
     await callback.message.answer(f'📆 Дата: {day}.{month}.{year}\n\nВиберіть дію', reply_markup=menu_buttons(callback.from_user.id))
 
-@dp.message_handler(text='👨‍🏫 Розклад викладача')
+@dp.message_handler(Text(contains='Розклад викладача'))
 async def teacher_schedule(message: types.Message):
     if not group_check(message.from_user.id):
         await UserWait.nure_group.set()
