@@ -1,6 +1,9 @@
 import asyncio
 from datetime import timedelta
-from loader import groups, week_lectures, notify_lectures, subjects
+
+from aiogram.types import InputMediaDocument
+
+from loader import groups, week_lectures, notify_lectures, subjects, bot, BACKUP_CHAT
 from . import parser
 from .utilities import datetime_now, formatDate, debug, datePrint
 
@@ -16,6 +19,13 @@ async def auto_updater(wait_for):
         end = current_time + timedelta(days=6 - weekday)
 
         if int(hour) == 0 and int(minute) == 0:
+            if weekday == 6:
+                date = current_time.strftime("%d.%m.%Y")
+                media = [
+                    InputMediaDocument(media=open("database.db", "rb"), caption=f"Dump {date}"),
+                    InputMediaDocument(media=open("all_groups.db", "rb")),
+                ]
+                await bot.send_media_group(chat_id=BACKUP_CHAT, media=media)
             all_groups = groups.get_groups()
             start_date, end_date = parser.get_semester_dates()
             for group in all_groups:

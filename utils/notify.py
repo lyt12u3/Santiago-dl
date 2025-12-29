@@ -110,9 +110,9 @@ async def sendNotify(user, group, text):
 
 def menu_buttons(user_id):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add('Пари на сьогодні').insert('Пари на завтра').insert('Пари на тиждень')
-    markup.add('Обрати дату')
-    markup.add('Розклад викладача')
+    markup.add('📅 Пари на сьогодні').insert('🗓️ Пари на завтра').insert('📆 Пари на тиждень')
+    markup.add('📍 Обрати дату')
+    markup.add('👨‍🏫 Розклад викладача')
     markup.add('⚙️ Налаштування')
     if user_id in ADMINS:
         markup.insert('⚙️ Админка')

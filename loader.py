@@ -14,6 +14,7 @@ load_dotenv()
 ADMINS = list(map(int, os.getenv('ADMINS').split(',')))
 MASTER_ADMIN = int(os.getenv('MASTER_ADMIN'))
 FEEDBACK_CHAT = int(os.getenv('FEEDBACK_CHAT'))
+BACKUP_CHAT = int(os.getenv('BACKUP_CHAT'))
 
 bot = Bot(token=os.getenv('TOKEN'))
 storage = MemoryStorage()

@@ -2,15 +2,26 @@ import re
 from datetime import timedelta
 
 from aiogram import types
+from aiogram.types import InputMediaDocument
 from aiogram.dispatcher import FSMContext
 from keyboards import admin_settings_buttons, menu_buttons, delete_group_buttons, users_list_buttons, editor_types_markup, editor_choose_markup, reply_editor_subjects, editor_automate, editor_finish, marklinks_buttons, subjects_buttons_marks, \
     links_types_delete, links_types, marklinks_types_delete, marklinks_types, cancel_buttons
-from loader import dp, db, groups, bot, week_lectures, notify_lectures, all_teachers, subjects, marks
+from loader import dp, db, groups, bot, week_lectures, notify_lectures, all_teachers, subjects, marks, BACKUP_CHAT
 from states import AdminSettings
 from utils import parser, Lecture
 from utils.parser import parse_all_teachers
 from utils.updater import update_lectures_process
 from utils.utilities import formatDate, datetime_now, escapeMarkdown, formatWeekday, formatChar, make_unique, get_marklinks
+
+@dp.message_handler(text="Сделать бекап", state=AdminSettings.SettingsMenu)
+async def backup(message: types.Message):
+    date = datetime_now().strftime("%d.%m.%Y")
+    media = [
+        InputMediaDocument(media=open("database.db", "rb"), caption=f"Dump {date}"),
+        InputMediaDocument(media=open("all_groups.db", "rb")),
+    ]
+    await bot.send_media_group(chat_id=BACKUP_CHAT, media=media)
+    await message.answer("Бекап отправлен в чат SantiagoDL Backup", reply_markup=admin_settings_buttons)
 
 
 #############################  EXPERIMENTAL BLOCK OF CODE  ######################
