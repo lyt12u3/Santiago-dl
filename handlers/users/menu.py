@@ -6,9 +6,9 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from data import config
 from keyboards import menu_buttons, month_buttons, another_day_buttons, settings_buttons, admin_settings_buttons, choose_group_buttons, select_teachers, cancel_buttons
-from loader import dp, db, week_lectures, ADMINS, display, display_new, teachers, all_teachers, bot
+from loader import dp, db, week_lectures, ADMINS, display, display_new, teachers, all_teachers, bot, year_lectures
 from states import AdminSettings, UserWait
-from utils import parser
+from utils import parser, updater
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from utils.parser import parse_teacher_week
@@ -109,7 +109,26 @@ async def week_forward(callback: types.CallbackQuery):
     current_week[user_id] = start
 
     end = start + timedelta(days=6)
-    week_days = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+    groups = list(year_lectures.keys())
+    if group not in groups:
+        await updater.update_lectures_process()
+
+    dates = []
+    current = start
+
+    while current <= end:
+        dates.append(current.strftime("%d.%m.%Y"))
+        current += timedelta(days=1)
+
+    result = set(dates).issubset(set(list(year_lectures[group].keys())))
+    if not result:
+        week_days = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+    else:
+        week_days = {}
+        for date in dates:
+            week_days[date] = (year_lectures[group][date])
+
+    # week_days = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
 
     day, month, year = formatDate(datetime_now())
     date = f"{day}.{month}.{year}"
@@ -138,7 +157,7 @@ async def week_forward(callback: types.CallbackQuery):
     await callback.message.edit_text(lectures, parse_mode="HTML", reply_markup=kb)
 
 @dp.callback_query_handler(text="week_back")
-async def week_forward(callback: types.CallbackQuery):
+async def week_backward(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     group = db.get_group(user_id)
 
@@ -147,7 +166,26 @@ async def week_forward(callback: types.CallbackQuery):
     current_week[user_id] = start
 
     end = start + timedelta(days=6)
-    week_days = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+    groups = list(year_lectures.keys())
+    if group not in groups:
+        await updater.update_lectures_process()
+
+    dates = []
+    current = start
+
+    while current <= end:
+        dates.append(current.strftime("%d.%m.%Y"))
+        current += timedelta(days=1)
+
+    result = set(dates).issubset(set(list(year_lectures[group].keys())))
+    if not result:
+        week_days = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
+    else:
+        week_days = {}
+        for date in dates:
+            week_days[date] = (year_lectures[group][date])
+
+    # week_days = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group)
 
     day, month, year = formatDate(datetime_now())
     date = f"{day}.{month}.{year}"

@@ -15,6 +15,7 @@ ADMINS = list(map(int, os.getenv('ADMINS').split(',')))
 MASTER_ADMIN = int(os.getenv('MASTER_ADMIN'))
 FEEDBACK_CHAT = int(os.getenv('FEEDBACK_CHAT'))
 BACKUP_CHAT = int(os.getenv('BACKUP_CHAT'))
+LINK = str(os.getenv('LINK'))
 
 bot = Bot(token=os.getenv('TOKEN'))
 storage = MemoryStorage()
@@ -24,6 +25,7 @@ notify_lectures = {}
 week_lectures = {}
 today_lectures = {}
 tomorrow_lectures = {}
+year_lectures = {}
 
 file = "database.db"
 db = Users(file)

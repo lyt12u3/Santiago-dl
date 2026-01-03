@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import requests
 import re
 from bs4 import BeautifulSoup as BS
@@ -324,3 +326,97 @@ def parse_teacher_week(day1, month1, year1, day2, month2, year2, teacher):
             parsed_week[current_date].append(LectureTeacher(pair_number, teacher, name, type, group, start_hours, start_minutes, end_hours, end_minutes))
             # print(f"Name |{name}| type |{type}| app |{app}| group |{group}|")
     return parsed_week
+
+def parseYear(group="КНТ-22-4", start_date=None, end_date=None):
+    try:
+        if not start_date and not end_date:
+            debug("Subjects updating: parsing start and end dates...")
+            start_date, end_date = get_semester_dates()
+            debug("Subjects updating: parsing subjects...")
+        group_code = groups.get_code(group)
+        # group_code = "10306577"
+        URL = f"https://cist.nure.ua/ias/app/tt/f?p=778:201:527954707314034:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{start_date},{end_date},{group_code},0:"
+        r = requests.get(URL)
+        html = BS(r.content, 'lxml')
+        table = html.select('table.MainTT tr')[1:]
+
+        schedule = []
+
+        year = {}
+
+        for item in table:
+            debug("ITEM: ============")
+            # print(item)
+            lectures_check = item.find('td', class_='left')
+            if lectures_check is None:
+                debug("PARSING DATES...")
+                elements = item.find_all('td', class_='date')
+                weekday = elements[0].text
+                year[weekday] = {}
+                dates_unformatted = elements[1:]
+                dates = []
+                for obj in dates_unformatted:
+                    dates.append(obj.text)
+                    year[weekday][obj.text] = []
+                # print(f"DAY: {weekday}\nINFO: {dates}")
+                debug("DATES PARSED SUCCESSFULLY")
+            else:
+                debug("LECTURES DETECTED, PARSING...")
+                index = item.find('td').text
+                time = item.find('td').find_next_sibling().text
+                debug(f"{index}: {time}")
+                weekdays = list(year.keys())
+                currentWeekday = weekdays[-1]
+                debug(f"Parsing into: {currentWeekday}")
+                items = item.find_all('td')[2:]
+
+                iterator = 0
+                for block in items:
+                    dates = list(year[currentWeekday].keys())
+
+                    a_tags = block.find_all("a")
+                    if a_tags:
+                        info = []
+                        for pair in a_tags:
+                            type = re.search(r'\s(\w+)$', pair.text).group()[1:]
+                            name = re.search(r'(.+)\s', pair.text).group()[:-1]
+                            info.append([name, type])
+                        start = re.search(r'(.+)\s', time).group().replace(" ", "")
+                        end = re.search(r'\s(.+)', time).group().replace(" ", "")
+                        start_hours, start_minutes = start.split(':')
+                        end_hours, end_minutes = end.split(':')
+
+                        colspan = block.get('colspan')
+                        if colspan:
+                            # print(f"Multilecture detected with width = {colspan}")
+                            start_day = iterator
+                            end_day = iterator + int(colspan)
+                            for day_num in range(start_day, end_day):
+                                debug(f"{dates[day_num]}: Lecture detected: {info}")
+                                lect = Lecture(index, info, start_hours, start_minutes, end_hours, end_minutes)
+                                year[currentWeekday][dates[day_num]].append(lect)
+                            iterator = iterator + int(colspan)
+                        else:
+                            lect = Lecture(index, info, start_hours, start_minutes, end_hours, end_minutes)
+                            year[currentWeekday][dates[iterator]].append(lect)
+                            debug(f"{dates[iterator]}: Single lecture detected: {info}")
+                            iterator = iterator + 1
+                    else:
+                        debug(f"{dates[iterator]}")
+                        iterator = iterator + 1
+
+        return normalize_year(year)
+    except Exception as e:
+        print(f"Error {group}: {e.args[0]}")
+
+def normalize_year(old_year):
+    formatted = {}
+    for weekday in old_year:
+        for date in old_year[weekday]:
+            new_date = old_year[weekday][date]
+            new_date.insert(0, weekday)
+            formatted[date] = new_date
+
+    formatted = dict(sorted(formatted.items(),key=lambda item: datetime.strptime(item[0], "%d.%m.%Y")))
+
+    return formatted

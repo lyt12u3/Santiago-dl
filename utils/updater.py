@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from aiogram.types import InputMediaDocument
 
-from loader import groups, week_lectures, notify_lectures, subjects, bot, BACKUP_CHAT
+from loader import groups, week_lectures, notify_lectures, subjects, bot, BACKUP_CHAT, year_lectures
 from . import parser
 from .utilities import datetime_now, formatDate, debug, datePrint
 
@@ -34,6 +34,8 @@ async def auto_updater(wait_for):
                     debug("Получение актуальных предметов группы")
                     current_links_arr = parser.parseSubjects(group[0], start_date, end_date)
                     subjects.set_subjects(group[0], current_links_arr)
+                    debug("Получение расписания на год")
+                    year_lectures[group[0]] = parser.parseYear(group[0])
                     debug("Получение расписания")
                     week_lectures[group[0]] = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group[0])
                     notify_lectures[group[0]] = week_lectures[group[0]][f"{day}.{month}.{year}"][1:]
@@ -44,6 +46,7 @@ async def auto_updater(wait_for):
 async def update_lectures_process():
     current_time = datetime_now()
     day, month, year = formatDate(current_time)
+
 
     weekday = current_time.weekday()
     start = current_time - timedelta(days=weekday)
@@ -58,6 +61,8 @@ async def update_lectures_process():
             debug("Получение актуальных предметов группы")
             current_links_arr = parser.parseSubjects(group[0], start_date, end_date)
             subjects.set_subjects(group[0], current_links_arr)
+            debug("Получение расписания на год")
+            year_lectures[group[0]] = parser.parseYear(group[0])
             debug("Получение расписания")
             week_lectures[group[0]] = parser.parseWeek(start.day, start.month, start.year, end.day, end.month, end.year, group[0])
             notify_lectures[group[0]] = week_lectures[group[0]][f"{day}.{month}.{year}"][1:]

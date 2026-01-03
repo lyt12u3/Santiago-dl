@@ -2,7 +2,7 @@ import sqlite3
 
 class Users:
     def __init__(self, database_file):
-        self.connection = sqlite3.connect(database_file)
+        self.connection = sqlite3.connect(database_file, check_same_thread=False)
         self.cursor = self.connection.cursor()
 
     def user_exists(self, user_id):
