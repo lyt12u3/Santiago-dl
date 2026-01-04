@@ -60,7 +60,7 @@ def format_lectures(day, month, year, user_id, week_lectures_list):
         current_subj_arr_line = subjects.get_subjects(group)
         current_subj_arr = current_subj_arr_line.split(',')
     else:
-        current_subj_arr = parser.parseSubjects(group)
+        current_subj_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_subj_arr)
     if not display_new.user_exist(user_id, group):
         for subj in current_subj_arr:
@@ -173,7 +173,7 @@ async def format_week(user_id, group):
         current_subj_arr_line = subjects.get_subjects(group)
         current_subj_arr = current_subj_arr_line.split(',')
     else:
-        current_subj_arr = parser.parseSubjects(group)
+        current_subj_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_subj_arr)
     if not display_new.user_exist(user_id, group):
         for subj in current_subj_arr:
@@ -213,7 +213,7 @@ def get_links(user_id, text = True):
         current_links_arr_line = subjects.get_subjects(group)
         current_links_arr = current_links_arr_line.split(',')
     else:
-        current_links_arr = parser.parseSubjects(group)
+        current_links_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_links_arr)
     current_links = ""
     if text:
@@ -244,7 +244,7 @@ def get_marklinks(user_id, text = True):
         current_links_arr_line = subjects.get_subjects(group)
         current_links_arr = current_links_arr_line.split(',')
     else:
-        current_links_arr = parser.parseSubjects(group)
+        current_links_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_links_arr)
     current_links = ""
     if text:

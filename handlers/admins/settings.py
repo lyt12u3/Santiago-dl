@@ -6,7 +6,8 @@ from aiogram.types import InputMediaDocument
 from aiogram.dispatcher import FSMContext
 from keyboards import admin_settings_buttons, menu_buttons, delete_group_buttons, users_list_buttons, editor_types_markup, editor_choose_markup, reply_editor_subjects, editor_automate, editor_finish, marklinks_buttons, subjects_buttons_marks, \
     links_types_delete, links_types, marklinks_types_delete, marklinks_types, cancel_buttons
-from loader import dp, db, groups, bot, week_lectures, notify_lectures, all_teachers, subjects, marks, BACKUP_CHAT
+from loader import dp, db, groups, bot, week_lectures, notify_lectures, all_teachers, subjects, marks, BACKUP_CHAT, \
+    subjects_info
 from states import AdminSettings
 from utils import parser, Lecture
 from utils.parser import parse_all_teachers
@@ -68,8 +69,10 @@ async def callback_links(callback: types.CallbackQuery):
         current_links_arr_line = subjects.get_subjects(group)
         current_links_arr = current_links_arr_line.split(',')
     else:
-        current_links_arr = parser.parseSubjects(group)
+        current_links_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_links_arr)
+
+        subjects_info.set_subject_info()
     if subject in current_links_arr:
         marks.delete_marklink(group, subject, type)
         await callback.message.answer("Посилання видалено", reply_markup=admin_settings_buttons)
@@ -103,7 +106,7 @@ async def callback_links(callback: types.CallbackQuery):
         current_links_arr_line = subjects.get_subjects(group)
         current_links_arr = current_links_arr_line.split(',')
     else:
-        current_links_arr = parser.parseSubjects(group)
+        current_links_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_links_arr)
     if subject in current_links_arr:
         line = escapeMarkdown(f"Введіть посилання на відвідування для {subject} {type}\n\nПриклад: https://dl.nure.ua/mod/attendance/view.php?id=687645")

@@ -157,7 +157,7 @@ async def callback_links(callback: types.CallbackQuery):
         current_links_arr_line = subjects.get_subjects(group)
         current_links_arr = current_links_arr_line.split(',')
     else:
-        current_links_arr = parser.parseSubjects(group)
+        current_links_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_links_arr)
     if subject in current_links_arr:
         if type == "All":
@@ -201,7 +201,7 @@ async def callback_links(callback: types.CallbackQuery):
         current_links_arr_line = subjects.get_subjects(group)
         current_links_arr = current_links_arr_line.split(',')
     else:
-        current_links_arr = parser.parseSubjects(group)
+        current_links_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_links_arr)
     if subject in current_links_arr:
         if type == "All":
@@ -255,7 +255,7 @@ async def notify_test(message: types.Message):
         current_subj_arr_line = subjects.get_subjects(group)
         current_subj_arr = current_subj_arr_line.split(',')
     else:
-        current_subj_arr = parser.parseSubjects(group)
+        current_subj_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_subj_arr)
     links_exist = False
     for subj in current_subj_arr:
@@ -300,7 +300,7 @@ async def callback_userid(callback: types.CallbackQuery):
         current_subj_arr_line = subjects.get_subjects(group)
         current_subj_arr = current_subj_arr_line.split(',')
     else:
-        current_subj_arr = parser.parseSubjects(group)
+        current_subj_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_subj_arr)
 
     for subj in current_subj_arr:

@@ -47,7 +47,7 @@ def subjects_buttons(callback):
         current_links_arr_line = subjects.get_subjects(group)
         current_links_arr = current_links_arr_line.split(',')
     else:
-        current_links_arr = parser.parseSubjects(group)
+        current_links_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_links_arr)
 
     markup = InlineKeyboardMarkup(row_width=3)
@@ -67,7 +67,7 @@ def subjects_buttons_marks(callback):
         current_links_arr_line = subjects.get_subjects(group)
         current_links_arr = current_links_arr_line.split(',')
     else:
-        current_links_arr = parser.parseSubjects(group)
+        current_links_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_links_arr)
 
     markup = InlineKeyboardMarkup(row_width=3)
@@ -85,7 +85,7 @@ def notify_buttons(user_id, group):
         current_subj_arr_line = subjects.get_subjects(group)
         current_subj_arr = current_subj_arr_line.split(',')
     else:
-        current_subj_arr = parser.parseSubjects(group)
+        current_subj_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_subj_arr)
 
     markup = InlineKeyboardMarkup(row_width=3)
@@ -107,7 +107,7 @@ def display_buttons(user_id, group):
         current_subj_arr_line = subjects.get_subjects(group)
         current_subj_arr = current_subj_arr_line.split(',')
     else:
-        current_subj_arr = parser.parseSubjects(group)
+        current_subj_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_subj_arr)
 
     markup = InlineKeyboardMarkup(row_width=3)
@@ -201,7 +201,7 @@ def reply_editor_subjects(user_id, group):
         current_subj_arr_line = subjects.get_subjects(group)
         current_subj_arr = current_subj_arr_line.split(',')
     else:
-        current_subj_arr = parser.parseSubjects(group)
+        current_subj_arr = list(parser.parseSubjects(group).keys())
         subjects.set_subjects(group, current_subj_arr)
 
     insert = False

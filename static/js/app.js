@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             tg.showPopup({
                 title: props.subjectName,
-                message: `⏰ Час: ${props.rawTime}\n📚 Тип: ${props.fullType}`,
+                message: `💬 Повна назва: ${props.subjectFullName}\n⏰ Час: ${props.rawTime}\n📚 Тип: ${props.fullType}\n👨‍🏫 Викладач: ${props.teacher}`,
                 buttons: [{type: 'close', text: 'Зрозуміло'}]
             });
         },
@@ -119,11 +119,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             title: item[0],
                             start: `${isoDate}T${lec.start}:00`,
                             end: `${isoDate}T${lec.end}:00`,
-                            classNames: [typeClassMap[item[1]] || 'type-default'],
+                            classNames: [typeClassMap[item[2]] || 'type-default'],
                             extendedProps: {
                                 subjectName: item[0],
-                                shortType: item[1],
-                                fullType: item[2] || item[1],
+                                subjectFullName: item[1],
+                                shortType: item[2],
+                                fullType: item[3] || item[2],
+                                teacher: item[4],
                                 customTime: `${lec.start} - <br>${lec.end}`,
                                 rawTime: `${lec.start} - ${lec.end}`
                             }

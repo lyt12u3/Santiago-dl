@@ -9,3 +9,4 @@ from .notify import Notify
 from .display import Display
 from .display import DisplayNew
 from .marks import Marks
+from .subjects_info import SubjectsInfo

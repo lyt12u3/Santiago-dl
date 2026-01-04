@@ -5,10 +5,19 @@ import re
 from bs4 import BeautifulSoup as BS
 from loader import groups, groups_list, week_lectures, notify_lectures
 from utils.utilities import datetime_now, debug
+from dataclasses import dataclass
+
+session = requests.Session()
+
+RE_TYPE = re.compile(r"\s(\w+)$")
+RE_START = re.compile(r'(.+)\s')
+RE_END = re.compile(r'\s(.+)')
+RE_TYPE_2 = re.compile(r'^(.+)\s+\(')
+RE_TEACHER = re.compile(r',\s+(.+)')
 
 def parseApiGroups():
     print("[Updating all groups] Sending request")
-    r = requests.get("https://nure-dev.pp.ua/api/groups")
+    r = session.get("https://nure-dev.pp.ua/api/groups")
     print("[Updating all groups] Request successful")
     res = r.json()
     for group in res:
@@ -19,7 +28,7 @@ def parseApiGroups():
 def parse_faculties():
     faculties = []
     try:
-        r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:371574995017904::NO:::#")
+        r = session.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:371574995017904::NO:::#")
         html = BS(r.content.decode('windows-1251'), 'lxml')
         div = html.find("div", id="GROUPS_AJAX")
         table = div.find_all("table", class_="htmldbTabbedNavigationList")
@@ -44,7 +53,7 @@ def parseGroup():
     groups_list.truncate()
     for fac in faculties:
         print(f"Processing faculty: {fac[0]}")
-        r = requests.get(f"https://cist.nure.ua/ias/app/tt/WEB_IAS_TT_AJX_GROUPS?p_id_fac={fac[1]}")
+        r = session.get(f"https://cist.nure.ua/ias/app/tt/WEB_IAS_TT_AJX_GROUPS?p_id_fac={fac[1]}")
         html = BS(r.content, 'lxml')
         # result = html.find("div", id="GROUPS_AJAX")
         groups_data_lines = html.find_all("a", style="white-space:nowrap;")
@@ -57,7 +66,7 @@ def parseGroup():
 
 
 def parseGroup_old():
-    r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:2677400761397891::NO#")
+    r = session.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:2677400761397891::NO#")
     html = BS(r.content, 'lxml')
     result = html.find("div", id="GROUPS_AJAX")
     groups_data_lines = result.find_all("a", style="white-space:nowrap;")
@@ -70,32 +79,41 @@ def parseGroup_old():
         groups_list.add_group(group, code)
 
 
+@dataclass
 class Lecture:
-    def __init__(self, index, info, start_hours, start_minutes, end_hours, end_minutes):
-        self.index = index
-        self.info = info
-        self.start_hours = start_hours
-        self.start_minutes = start_minutes
-        self.end_hours = end_hours
-        self.end_minutes = end_minutes
-        # self.f_type = f_type
-        # if f_type == "Лк":
-        #     self.type = "Лекція"
-        # elif f_type == "Пз":
-        #     self.type = "Практичне заняття"
-        # elif f_type == "Лб":
-        #     self.type = "Лабораторне заняття"
-        # elif f_type == "Конс":
-        #     self.type = "Консультація"
-        # else:
-        #     self.type = "Не визначено"
+    index: str
+    info: list
+    start_hours: str
+    start_minutes: str
+    end_hours: str
+    end_minutes: str
 
-
-    def startTime(self):
-        return self.start_hours + ":" + self.start_minutes
-
-    def endTime(self):
-        return self.end_hours + ":" + self.end_minutes
+# class Lecture:
+#     def __init__(self, index, info, start_hours, start_minutes, end_hours, end_minutes):
+#         self.index = index
+#         self.info = info
+#         self.start_hours = start_hours
+#         self.start_minutes = start_minutes
+#         self.end_hours = end_hours
+#         self.end_minutes = end_minutes
+#         # self.f_type = f_type
+#         # if f_type == "Лк":
+#         #     self.type = "Лекція"
+#         # elif f_type == "Пз":
+#         #     self.type = "Практичне заняття"
+#         # elif f_type == "Лб":
+#         #     self.type = "Лабораторне заняття"
+#         # elif f_type == "Конс":
+#         #     self.type = "Консультація"
+#         # else:
+#         #     self.type = "Не визначено"
+#
+#
+#     def startTime(self):
+#         return self.start_hours + ":" + self.start_minutes
+#
+#     def endTime(self):
+#         return self.end_hours + ":" + self.end_minutes
 
     def set_start_time(self, start_hours, start_minutes):
         self.start_hours = start_hours
@@ -126,7 +144,7 @@ class LectureTeacher:
 
 def parseWeek(day1, month1, year1, day2, month2, year2, group="КНТ-22-4"):
     group_code = groups.get_code(group)
-    r = requests.get(
+    r = session.get(
         f"https://cist.nure.ua/ias/app/tt/f?p=778:201:1616752339325756:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{day1}.{month1}.{year1},{day2}.{month2}.{year2},{group_code},0:")
     html = BS(r.content, 'lxml')
     rows = html.select('table.MainTT tr')[1:]
@@ -147,8 +165,8 @@ def parseWeek(day1, month1, year1, day2, month2, year2, group="КНТ-22-4"):
         else:
             pair_number = row.find('td', class_='left').text
             pair_time = row.find('td', class_='left').find_next_sibling().text
-            start = re.search(r'(.+)\s', pair_time).group().replace(" ", "")
-            end = re.search(r'\s(.+)', pair_time).group().replace(" ", "")
+            start = RE_START.search(pair_time).group().replace(" ", "")
+            end = RE_END.search(pair_time).group().replace(" ", "")
             start_hours, start_minutes = start.split(':')
             end_hours, end_minutes = end.split(':')
 
@@ -165,7 +183,7 @@ def parseWeek(day1, month1, year1, day2, month2, year2, group="КНТ-22-4"):
 
 def get_semester_dates():
     try:
-        r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:371574995017904::NO:::#")
+        r = session.get("https://cist.nure.ua/ias/app/tt/f?p=778:2:371574995017904::NO:::#")
         html = BS(r.content, 'lxml')
         datepickers = html.find_all('td', class_='datepicker')
         start_date = datepickers[0].find_all('input')[1].get('value')
@@ -182,22 +200,36 @@ def parseSubjects(group="КНТ-22-4", start_date=None, end_date=None):
             start_date, end_date = get_semester_dates()
             debug("Subjects updating: parsing subjects...")
         group_code = groups.get_code(group)
-        r = requests.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:527954707314034:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{start_date},{end_date},{group_code},0:")
+        r = session.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:527954707314034:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{start_date},{end_date},{group_code},0:")
         html = BS(r.content, 'lxml')
 
-        subjects_names_table = html.find("table", class_="footer").find_all("td", class_="name")
-        result_subjects = []
-        for el in subjects_names_table:
-            result_subjects.append(el.text)
-
-        return result_subjects
+        tr_tags = html.find("table", class_="footer").find_all("tr")
+        result_subjects_full = {}
+        for tr in tr_tags:
+            name = tr.find('td', class_="name")
+            info = tr.find_all("td")[1].text
+            info_split = info.split(":")
+            info_split = [el.strip() for el in info_split if el.strip()]
+            full_name = info_split[0]
+            # debug(f"Short: {name.text}, long: {full_name}")
+            result_subjects_full[name.text] = {}
+            for teacher_str in info_split[1:]:
+                stripped_str = teacher_str.strip()
+                # print(f"searching in {str}")
+                try:
+                    lecture_type = RE_TYPE_2.search(stripped_str).group(1)
+                    teacher = RE_TEACHER.search(stripped_str).group(1)
+                    result_subjects_full[name.text][lecture_type] = [full_name, teacher]
+                except AttributeError:
+                    debug(f"Could not parse {stripped_str}")
+        return result_subjects_full
     except Exception as e:
         print(f"Error {group}: {e.args[0]}")
 
 def parseDay(day, month, year, group="КНТ-22-4"):
     # all_groups = Groups("database.db")
     group_code = groups.get_code(group)
-    r = requests.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:1616752339325756:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{day}.{month}.{year},{day}.{month}.{year},{group_code},0:")
+    r = session.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:1616752339325756:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{day}.{month}.{year},{day}.{month}.{year},{group_code},0:")
     # if group == "КНТ-22-4":
     #     r = requests.get(f"https://cist.nure.ua/ias/app/tt/f?p=778:201:1616752339325756:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{day}.{month}.{year},{day}.{month}.{year},10306577,0:")
     # elif group == "ВПВПС-22-3":
@@ -238,7 +270,7 @@ def parseDay(day, month, year, group="КНТ-22-4"):
 def parse_kafedras():
     kafedras = []
     try:
-        r = requests.get("https://cist.nure.ua/ias/app/tt/f?p=778:4:1011919354201228::NO:::#")
+        r = session.get("https://cist.nure.ua/ias/app/tt/f?p=778:4:1011919354201228::NO:::#")
         html = BS(r.content.decode('windows-1251'), 'lxml')
         div = html.find("div", id="TEACHS_AJAX")
         table = div.find_all("table", class_="htmldbTabbedNavigationList")
@@ -262,7 +294,7 @@ def parse_teachers(kaf,):
     teachers = []
     try:
         link = f"https://cist.nure.ua/ias/app/tt/WEB_IAS_TT_AJX_TEACHS?p_id_fac=95&p_id_kaf={kaf}"
-        r = requests.get(link)
+        r = session.get(link)
         html = BS(r.content.decode('windows-1251'), 'lxml')
         result = html.find("table", class_="t13Standard")
         teachers_arr = result.find_all("td", class_="t13datatop")
@@ -294,7 +326,7 @@ def parse_all_teachers():
 
 def parse_teacher_week(day1, month1, year1, day2, month2, year2, teacher):
     link = f"https://cist.nure.ua/ias/app/tt/f?p=778:202:611417407963254:::202:P202_FIRST_DATE,P202_LAST_DATE,P202_SOTR,P202_KAF:{day1}.{month1}.{year1},{day2}.{month2}.{year2},{teacher},0:"
-    r = requests.get(link)
+    r = session.get(link)
     html = BS(r.content, 'lxml')
     rows = html.select('table.MainTT tr')[1:]
 
@@ -336,7 +368,7 @@ def parseYear(group="КНТ-22-4", start_date=None, end_date=None):
         group_code = groups.get_code(group)
         # group_code = "10306577"
         URL = f"https://cist.nure.ua/ias/app/tt/f?p=778:201:527954707314034:::201:P201_FIRST_DATE,P201_LAST_DATE,P201_GROUP,P201_POTOK:{start_date},{end_date},{group_code},0:"
-        r = requests.get(URL)
+        r = session.get(URL)
         html = BS(r.content, 'lxml')
         table = html.select('table.MainTT tr')[1:]
 
@@ -378,11 +410,11 @@ def parseYear(group="КНТ-22-4", start_date=None, end_date=None):
                     if a_tags:
                         info = []
                         for pair in a_tags:
-                            type = re.search(r'\s(\w+)$', pair.text).group()[1:]
-                            name = re.search(r'(.+)\s', pair.text).group()[:-1]
+                            type = RE_TYPE.search(pair.text).group()[1:]
+                            name = RE_START.search(pair.text).group()[:-1]
                             info.append([name, type])
-                        start = re.search(r'(.+)\s', time).group().replace(" ", "")
-                        end = re.search(r'\s(.+)', time).group().replace(" ", "")
+                        start = RE_START.search(time).group().replace(" ", "")
+                        end = RE_END.search(time).group().replace(" ", "")
                         start_hours, start_minutes = start.split(':')
                         end_hours, end_minutes = end.split(':')
 

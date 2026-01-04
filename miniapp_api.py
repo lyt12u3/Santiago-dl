@@ -2,7 +2,7 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from loader import week_lectures, year_lectures, db
+from loader import week_lectures, year_lectures, db, subjects_info
 from utils.utilities import type_format
 
 app = FastAPI()
@@ -47,7 +47,9 @@ def get_week(user_id: int = Query(...)):
                 subject = item[0]
                 short_type = item[1]
                 full_type = type_format(short_type)
-                formatted_info.append([subject, short_type, full_type])
+                full_name = subjects_info.get_full_name(group, subject, short_type)
+                teacher = subjects_info.get_teacher(group, subject, short_type)
+                formatted_info.append([subject, full_name, short_type, full_type, teacher])
 
             # Исправляем формат времени (добавляем ведущие нули)
             try:

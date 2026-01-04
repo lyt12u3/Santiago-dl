@@ -3,9 +3,12 @@ from datetime import timedelta
 
 from aiogram.types import InputMediaDocument
 
-from loader import groups, week_lectures, notify_lectures, subjects, bot, BACKUP_CHAT, year_lectures
+from loader import groups, week_lectures, notify_lectures, subjects, bot, BACKUP_CHAT, year_lectures, subjects_info
 from . import parser
 from .utilities import datetime_now, formatDate, debug, datePrint
+
+import time as t
+from functools import wraps
 
 async def auto_updater(wait_for):
     while True:
@@ -32,8 +35,13 @@ async def auto_updater(wait_for):
                 debug(f"Автоматическое обновление {group[0]}:")
                 try:
                     debug("Получение актуальных предметов группы")
-                    current_links_arr = parser.parseSubjects(group[0], start_date, end_date)
+                    subjects_info_parsed = parser.parseSubjects(group[0], start_date, end_date)
+                    current_links_arr = list(subjects_info_parsed.keys())
                     subjects.set_subjects(group[0], current_links_arr)
+                    for short_name, item in subjects_info_parsed.items():
+                        for lect_type, info in item.items():
+                            full_name, teacher = info
+                            subjects_info.set_subject_info(group[0], short_name, lect_type, full_name, teacher)
                     debug("Получение расписания на год")
                     year_lectures[group[0]] = parser.parseYear(group[0])
                     debug("Получение расписания")
@@ -55,12 +63,18 @@ async def update_lectures_process():
     all_groups = groups.get_groups()
 
     start_date, end_date = parser.get_semester_dates()
+    t1 = t.perf_counter()
     for group in all_groups:
         datePrint(f"Загрузка {group[0]}...")
         try:
             debug("Получение актуальных предметов группы")
-            current_links_arr = parser.parseSubjects(group[0], start_date, end_date)
+            subjects_info_parsed = parser.parseSubjects(group[0], start_date, end_date)
+            current_links_arr = list(subjects_info_parsed.keys())
             subjects.set_subjects(group[0], current_links_arr)
+            for short_name, item in subjects_info_parsed.items():
+                for lect_type, info in item.items():
+                    full_name, teacher = info
+                    subjects_info.set_subject_info(group[0], short_name, lect_type, full_name, teacher)
             debug("Получение расписания на год")
             year_lectures[group[0]] = parser.parseYear(group[0])
             debug("Получение расписания")
@@ -68,3 +82,4 @@ async def update_lectures_process():
             notify_lectures[group[0]] = week_lectures[group[0]][f"{day}.{month}.{year}"][1:]
         except Exception as e:
             print(f"Error updating group {group[0]}: {e.args[0]}")
+    print(f"Spent for all groups: {t.perf_counter() - t1:.4f}s")
