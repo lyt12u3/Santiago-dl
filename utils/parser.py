@@ -88,6 +88,12 @@ class Lecture:
     end_hours: str
     end_minutes: str
 
+    def startTime(self) -> str:
+        return f"{self.start_hours}:{self.start_minutes}"
+
+    def endTime(self) -> str:
+        return f"{self.end_hours}:{self.end_minutes}"
+
 # class Lecture:
 #     def __init__(self, index, info, start_hours, start_minutes, end_hours, end_minutes):
 #         self.index = index
